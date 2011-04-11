@@ -101,7 +101,7 @@ void pGuiModel::cellChanged(QTableWidgetItem* item)
       m_pIsModified = true;
     }
     if (classifier && m_pIsReady) {
-      //classifier->setName("test25"); //TODO ELV
+      classifier->setName("test25"); 
     }
     qDebug() << "name Changed";
   }

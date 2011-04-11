@@ -527,7 +527,7 @@ void ClassifierListTab::reloadItemListBox()
               connect( listItem, SIGNAL(modified()),this,SLOT(slotListItemModified()) );
             }
         }
-        addEmtpyRow();
+        //addEmtpyRow();
 
     }
 }
