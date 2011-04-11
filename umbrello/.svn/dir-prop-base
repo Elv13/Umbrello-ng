@@ -1,0 +1,15 @@
+K 10
+svn:ignore
+V 116
+*.moc
+.deps
+.libs
+CMakeFiles
+DartTestfile.txt
+Makefile
+Makefile.in
+cmake_install.cmake
+install_icons.cmake
+umbrello
+
+END

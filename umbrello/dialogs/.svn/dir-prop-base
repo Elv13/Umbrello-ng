@@ -1,0 +1,21 @@
+K 10
+svn:ignore
+V 303
+*.moc
+.libs
+CMakeFiles
+DartTestfile.txt
+Makefile
+Makefile.in
+cmake_install.cmake
+codegenerationoptionsbase.cpp
+codegenerationoptionsbase.h
+codegenerationwizardbase.cpp
+codegenerationwizardbase.h
+configgeneratorsbase.cpp
+configgeneratorsbase.h
+install_icons.cmake
+sellanguagesbase.cpp
+sellanguagesbase.h
+
+END

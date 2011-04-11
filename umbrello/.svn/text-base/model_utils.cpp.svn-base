@@ -1,0 +1,1730 @@
+/***************************************************************************
+ *   This program is free software; you can redistribute it and/or modify  *
+ *   it under the terms of the GNU General Public License as published by  *
+ *   the Free Software Foundation; either version 2 of the License, or     *
+ *   (at your option) any later version.                                   *
+ *                                                                         *
+ *   copyright (C) 2004-2010                                               *
+ *   Umbrello UML Modeller Authors <uml-devel@uml.sf.net>                  *
+ ***************************************************************************/
+
+// own header
+#include "model_utils.h"
+
+// app includes
+#include "umlobject.h"
+#include "umlpackagelist.h"
+#include "uniqueconstraint.h"
+#include "package.h"
+#include "folder.h"
+#include "classifier.h"
+#include "enum.h"
+#include "entity.h"
+#include "template.h"
+#include "operation.h"
+#include "attribute.h"
+#include "association.h"
+#include "umlrole.h"
+#include "umldoc.h"
+#include "uml.h"
+#include "umllistview.h"
+#include "umllistviewitem.h"
+#include "umlview.h"
+#include "codegenerator.h"
+
+// kde includes
+#include <klocale.h>
+#include <kdebug.h>
+
+// qt includes
+#include <QtCore/QRegExp>
+#include <QtCore/QStringList>
+
+namespace Model_Utils {
+
+/**
+ * Determines whether the given widget type is cloneable.
+ *
+ * @param type  The input Widget_Type.
+ * @return      True if the given type is cloneable.
+ */
+bool isCloneable(Uml::Widget_Type type)
+{
+    switch (type) {
+    case Uml::wt_Actor:
+    case Uml::wt_UseCase:
+    case Uml::wt_Class:
+    case Uml::wt_Interface:
+    case Uml::wt_Enum:
+    case Uml::wt_Datatype:
+    case Uml::wt_Package:
+    case Uml::wt_Component:
+    case Uml::wt_Node:
+    case Uml::wt_Artifact:
+        return true;
+    default:
+        return false;
+    }
+}
+
+/**
+ * Seek the given id in the given list of objects.
+ * Each list element may itself contain other objects
+ * and the search is done recursively.
+ *
+ * @param id       The unique ID to seek.
+ * @param inList   The UMLObjectList in which to search.
+ * @return Pointer to the UMLObject that matches the ID (NULL if none matches).
+ */
+UMLObject* findObjectInList(Uml::IDType id, const UMLObjectList& inList)
+{
+    for (UMLObjectListIt oit(inList); oit.hasNext(); ) {
+        UMLObject *obj = oit.next();
+        if (obj->id() == id)
+            return obj;
+        UMLObject *o;
+        Uml::Object_Type t = obj->baseType();
+        switch (t) {
+        case Uml::ot_Folder:
+        case Uml::ot_Package:
+        case Uml::ot_Component:
+            o = static_cast<UMLPackage*>(obj)->findObjectById(id);
+            if (o)
+                return o;
+            break;
+        case Uml::ot_Interface:
+        case Uml::ot_Class:
+        case Uml::ot_Enum:
+        case Uml::ot_Entity:
+            o = static_cast<UMLClassifier*>(obj)->findChildObjectById(id);
+            if (o == NULL &&
+                    (t == Uml::ot_Interface || t == Uml::ot_Class))
+                o = ((UMLPackage*)obj)->findObjectById(id);
+            if (o)
+                return o;
+            break;
+        case Uml::ot_Association:
+            {
+                UMLAssociation *assoc = static_cast<UMLAssociation*>(obj);
+                UMLRole *rA = assoc->getUMLRole(Uml::A);
+                if (rA->id() == id)
+                    return rA;
+                UMLRole *rB = assoc->getUMLRole(Uml::B);
+                if (rB->id() == id)
+                    return rB;
+            }
+            break;
+        default:
+            break;
+        }
+    }
+    return NULL;
+}
+
+/**
+ * Find the UML object of the given type and name in the passed-in list.
+ *
+ * @param inList        List in which to seek the object.
+ * @param name          Name of the object to find.
+ * @param type          Object_Type of the object to find (optional.)
+ *                      When the given type is ot_UMLObject the type is
+ *                      disregarded, i.e. the given name is the only
+ *                      search criterion.
+ * @param currentObj    Object relative to which to search (optional.)
+ *                      If given then the enclosing scope(s) of this
+ *                      object are searched before the global scope.
+ * @return      Pointer to the UMLObject found, or NULL if not found.
+ */
+UMLObject* findUMLObject(const UMLObjectList& inList,
+                         const QString& inName,
+                         Uml::Object_Type type /* = ot_UMLObject */,
+                         UMLObject *currentObj /* = NULL */)
+{
+    const bool caseSensitive = UMLApp::app()->activeLanguageIsCaseSensitive();
+    QString name = inName;
+    QStringList components;
+#ifdef TRY_BUGFIX_120682
+    // If we have a pointer or a reference in cpp we need to remove
+    // the asterisks and ampersands in order to find the appropriate object
+    if (UMLApp::app()->getActiveLanguage() == Uml::pl_Cpp) {
+        if (name.endsWith('*'))
+            name.remove('*');
+        else if (name.contains('&'))
+            name.remove('&');
+    }
+#endif
+    if (name.contains("::"))
+        components = name.split("::");
+    else if (name.contains('.'))
+        components = name.split('.');
+    QString nameWithoutFirstPrefix;
+    if (components.size() > 1) {
+        name = components.front();
+        components.pop_front();
+        nameWithoutFirstPrefix = components.join("::");
+    }
+    if (currentObj) {
+        UMLPackage *pkg = NULL;
+        if (dynamic_cast<UMLClassifierListItem*>(currentObj)) {
+            currentObj = static_cast<UMLObject*>(currentObj->parent());
+        }
+        pkg = dynamic_cast<UMLPackage*>(currentObj);
+        if (pkg == NULL)
+            pkg = currentObj->umlPackage();
+        // Remember packages that we've seen - for avoiding cycles.
+        UMLPackageList seenPkgs;
+        for (; pkg; pkg = currentObj->umlPackage()) {
+            if (nameWithoutFirstPrefix.isEmpty()) {
+                if (caseSensitive) {
+                    if (pkg->name() == name)
+                        return pkg;
+                } else if (pkg->name().toLower() == name.toLower()) {
+                    return pkg;
+                }
+            }
+            if (seenPkgs.indexOf(pkg) != -1) {
+                uError() << "findUMLObject(" << name << "): "
+                    << "breaking out of cycle involving "
+                    << pkg->name();
+                break;
+            }
+            seenPkgs.append(pkg);
+            UMLObjectList objectsInCurrentScope = pkg->containedObjects();
+            for (UMLObjectListIt oit(objectsInCurrentScope); oit.hasNext(); ) {
+                UMLObject *obj = oit.next();
+                if (caseSensitive) {
+                    if (obj->name() != name)
+                        continue;
+                } else if (obj->name().toLower() != name.toLower()) {
+                    continue;
+                }
+                Uml::Object_Type foundType = obj->baseType();
+                if (nameWithoutFirstPrefix.isEmpty()) {
+                    if (type != Uml::ot_UMLObject && type != foundType) {
+                        uDebug() << "findUMLObject: type mismatch for "
+                            << name << " (seeking type: "
+                            << type << ", found type: "
+                            << foundType << ")";
+                        // Class, Interface, and Datatype are all Classifiers
+                        // and are considered equivalent.
+                        // The caller must be prepared to handle possible mismatches.
+                        if ((type == Uml::ot_Class ||
+                             type == Uml::ot_Interface ||
+                             type == Uml::ot_Datatype) &&
+                            (foundType == Uml::ot_Class ||
+                             foundType == Uml::ot_Interface ||
+                             foundType == Uml::ot_Datatype)) {
+                            return obj;
+                        }
+                        continue;
+                    }
+                    return obj;
+                }
+                if (foundType != Uml::ot_Package &&
+                    foundType != Uml::ot_Folder &&
+                    foundType != Uml::ot_Class &&
+                    foundType != Uml::ot_Interface &&
+                    foundType != Uml::ot_Component) {
+                    uDebug() << "findUMLObject: found \"" << name
+                        << "\" is not a package (?)";
+                    continue;
+                }
+                UMLPackage *pkg = static_cast<UMLPackage*>(obj);
+                return findUMLObject( pkg->containedObjects(),
+                                      nameWithoutFirstPrefix, type );
+            }
+            currentObj = pkg;
+        }
+    }
+    for (UMLObjectListIt oit(inList); oit.hasNext(); ) {
+        UMLObject *obj = oit.next();
+        if (caseSensitive) {
+            if (obj->name() != name)
+                continue;
+        } else if (obj->name().toLower() != name.toLower()) {
+            continue;
+        }
+        Uml::Object_Type foundType = obj->baseType();
+        if (nameWithoutFirstPrefix.isEmpty()) {
+            if (type != Uml::ot_UMLObject && type != foundType) {
+                uDebug() << "findUMLObject: type mismatch for "
+                    << name << " (seeking type: "
+                    << type << ", found type: "
+                    << foundType << ")";
+                continue;
+            }
+            return obj;
+        }
+        if (foundType != Uml::ot_Package &&
+            foundType != Uml::ot_Folder &&
+            foundType != Uml::ot_Class &&
+            foundType != Uml::ot_Interface &&
+            foundType != Uml::ot_Component) {
+            uDebug() << "findUMLObject: found \"" << name
+                << "\" is not a package (?)";
+            continue;
+        }
+        UMLPackage *pkg = static_cast<UMLPackage*>(obj);
+        return findUMLObject( pkg->containedObjects(),
+                              nameWithoutFirstPrefix, type );
+    }
+    return NULL;
+}
+
+/**
+ * Add the given list of views to the tree view.
+ * @param viewList   the list of views to add
+ */
+void treeViewAddViews(const UMLViewList& viewList)
+{
+    UMLListView* tree = UMLApp::app()->listView();
+    foreach (UMLView* v,  viewList) {
+        if (tree->findItem(v->umlScene()->getID()) != NULL) {
+            continue;
+        }
+        tree->createDiagramItem(v);
+    }
+}
+
+/**
+ * Change an icon of an object in the tree view.
+ * @param object   the object in the treeViewAddViews
+ * @param to       the new icon type for the given object
+ */
+void treeViewChangeIcon(UMLObject* object, Icon_Utils::Icon_Type to)
+{
+    UMLListView* tree = UMLApp::app()->listView();
+    tree->changeIconOf(object, to);
+}
+
+/**
+ * Set the given object to the current item in the tree view.
+ * @param object   the object which will be the current item
+ */
+void treeViewSetCurrentItem(UMLObject* object)
+{
+    UMLListView* tree = UMLApp::app()->listView();
+    UMLListViewItem* item = tree->findUMLObject(object);
+    tree->setCurrentItem(item);
+}
+
+/**
+ * Move an object to a new container in the tree view.
+ * @param container   the new container for the object
+ * @param object      the to be moved object
+ */
+void treeViewMoveObjectTo(UMLObject* container, UMLObject* object)
+{
+    UMLListView *listView = UMLApp::app()->listView();
+    UMLListViewItem *newParent = listView->findUMLObject(container);
+    listView->moveObject(object->id(),
+                   Model_Utils::convert_OT_LVT(object),
+                   newParent);
+}
+
+/**
+ * Return the current UMLObject from the tree view.
+ * @return   the UML object of the current item
+ */
+UMLObject* treeViewGetCurrentObject()
+{
+    UMLListView *listView = UMLApp::app()->listView();
+    UMLListViewItem *current = static_cast<UMLListViewItem*>(listView->currentItem());
+    return current->getUMLObject();
+}
+
+/**
+ * Return the UMLPackage if the current item
+ * in the tree view is a package.
+ * @return   the package or NULL
+ */
+UMLPackage* treeViewGetPackageFromCurrent()
+{
+    UMLListView *listView = UMLApp::app()->listView();
+    UMLListViewItem *parentItem = (UMLListViewItem*)listView->currentItem();
+    if (parentItem) {
+        Uml::ListView_Type lvt = parentItem->getType();
+        if (Model_Utils::typeIsContainer(lvt) ||
+            lvt == Uml::lvt_Class ||
+            lvt == Uml::lvt_Interface) {
+            UMLObject *o = parentItem->getUMLObject();
+            return static_cast<UMLPackage*>(o);
+        }
+    }
+    return NULL;
+}
+
+/**
+ * Build the diagram name from the tree view.
+ * @param id   the id of the diaram
+ * @return     the constructed diagram name
+ */
+QString treeViewBuildDiagramName(Uml::IDType id)
+{
+    UMLListView *listView = UMLApp::app()->listView();
+    UMLListViewItem* listViewItem = listView->findItem(id);
+
+    if (listViewItem) {
+        // skip the name of the first item because it's the View
+        listViewItem = static_cast<UMLListViewItem*>(listViewItem->parent());
+        
+        // Relies on the tree structure of the UMLListView. There are a base "Views" folder
+        // and five children, one for each view type (Logical, use case, components, deployment
+        // and entity relationship)
+        QString name;
+        while (listView->rootView(listViewItem->getType()) == NULL) {
+            name.insert(0, listViewItem->getText() + '/');
+            listViewItem = static_cast<UMLListViewItem*>(listViewItem->parent());
+            if (listViewItem == NULL)
+                break;
+        }
+        return name;
+    }
+    else {
+        uWarning() << "diagram not found - returning empty name!";
+        return QString();
+    }
+}
+
+/**
+ * Returns a name for the new object, appended with a number
+ * if the default name is taken e.g. new_actor, new_actor_1
+ * etc.
+ * @param type      The object type.
+ * @param parentPkg The package in which to compare the name.
+ * @param prefix    The prefix to use (optional)
+ *                  If no prefix is given then a type related
+ *                  prefix will be chosen internally.
+ */
+QString uniqObjectName(Uml::Object_Type type, UMLPackage *parentPkg, QString prefix)
+{
+    QString currentName = prefix;
+    if (currentName.isEmpty()) {
+        if(type == Uml::ot_Class)
+            currentName = i18n("new_class");
+        else if(type == Uml::ot_Actor)
+            currentName = i18n("new_actor");
+        else if(type == Uml::ot_UseCase)
+            currentName = i18n("new_usecase");
+        else if(type == Uml::ot_Package)
+            currentName = i18n("new_package");
+        else if(type == Uml::ot_Component)
+            currentName = i18n("new_component");
+        else if(type == Uml::ot_Node)
+            currentName = i18n("new_node");
+        else if(type == Uml::ot_Artifact)
+            currentName = i18n("new_artifact");
+        else if(type == Uml::ot_Interface)
+            currentName = i18n("new_interface");
+        else if(type == Uml::ot_Datatype)
+            currentName = i18n("new_datatype");
+        else if(type == Uml::ot_Enum)
+            currentName = i18n("new_enum");
+        else if(type == Uml::ot_Entity)
+            currentName = i18n("new_entity");
+        else if(type == Uml::ot_Folder)
+            currentName = i18n("new_folder");
+        else if(type == Uml::ot_Association)
+            currentName = i18n("new_association");
+        else if(type == Uml::ot_Category)
+            currentName = i18n("new_category");
+        else {
+            currentName = i18n("new_object");
+            uWarning() << "unknown object type in umldoc::uniqObjectName()";
+        }
+    }
+    UMLDoc *doc = UMLApp::app()->document();
+    QString name = currentName;
+    for (int number = 1; !doc->isUnique(name, parentPkg); ++number)  {
+        name = currentName + '_' + QString::number(number);
+    }
+    return name;
+}
+
+/**
+ * Return true if the given tag is a one of the common XMI
+ * attributes, such as:
+ * "name" | "visibility" | "isRoot" | "isLeaf" | "isAbstract" |
+ * "isActive" | "ownerScope"
+ */
+bool isCommonXMIAttribute( const QString &tag )
+{
+    bool retval = (Uml::tagEq(tag, "name") ||
+                   Uml::tagEq(tag, "visibility") ||
+                   Uml::tagEq(tag, "isRoot") ||
+                   Uml::tagEq(tag, "isLeaf") ||
+                   Uml::tagEq(tag, "isAbstract") ||
+                   Uml::tagEq(tag, "isSpecification") ||
+                   Uml::tagEq(tag, "isActive") ||
+                   Uml::tagEq(tag, "namespace") ||
+                   Uml::tagEq(tag, "ownerScope") ||
+                   Uml::tagEq(tag, "ModelElement.stereotype") ||
+                   Uml::tagEq(tag, "GeneralizableElement.generalization") ||
+                   Uml::tagEq(tag, "specialization") ||   //NYI
+                   Uml::tagEq(tag, "clientDependency") || //NYI
+                   Uml::tagEq(tag, "supplierDependency")  //NYI
+                  );
+    return retval;
+}
+
+/**
+ * Return true if the given type is common among the majority
+ * of programming languages, such as "bool" or "boolean".
+ * TODO: Make this depend on the active programming language.
+ */
+bool isCommonDataType(QString type)
+{
+    CodeGenerator *gen = UMLApp::app()->generator();
+    if (gen == NULL)
+        return false;
+    const bool caseSensitive = UMLApp::app()->activeLanguageIsCaseSensitive();
+    const QStringList dataTypes = gen->defaultDatatypes();
+    QStringList::ConstIterator end(dataTypes.end());
+    for (QStringList::ConstIterator it = dataTypes.begin(); it != end; ++it) {
+        if (caseSensitive) {
+            if (type == *it)
+                return true;
+        } else if (type.toLower() == (*it).toLower()) {
+            return true;
+        }
+    }
+    return false;
+}
+
+/**
+ * Return true if the given object type is a classifier list item type.
+ */
+bool isClassifierListitem(Uml::Object_Type type)
+{
+    if (type == Uml::ot_Attribute ||
+        type == Uml::ot_Operation ||
+        type == Uml::ot_Template ||
+        type == Uml::ot_EntityAttribute ||
+        type == Uml::ot_EnumLiteral ||
+        type == Uml::ot_UniqueConstraint ||
+        type == Uml::ot_ForeignKeyConstraint  ||
+        type == Uml::ot_CheckConstraint) {
+        return true;
+    } else {
+        return false;
+    }
+}
+
+/**
+ * Try to guess the correct container folder type of an UMLObject.
+ * Object types that can't be guessed are mapped to Uml::mt_Logical.
+ * NOTE: This function exists mainly for handling pre-1.5.5 files
+ *       and should not be used for new code.
+ */
+Uml::Model_Type guessContainer(UMLObject *o)
+{
+    Uml::Object_Type ot = o->baseType();
+    if (ot == Uml::ot_Package && o->stereotype() == "subsystem")
+        return Uml::mt_Component;
+    Uml::Model_Type mt = Uml::N_MODELTYPES;
+    switch (ot) {
+        case Uml::ot_Package:   // CHECK: packages may appear in other views?
+        case Uml::ot_Interface:
+        case Uml::ot_Datatype:
+        case Uml::ot_Enum:
+        case Uml::ot_Class:
+        case Uml::ot_Attribute:
+        case Uml::ot_Operation:
+        case Uml::ot_EnumLiteral:
+        case Uml::ot_Template:
+            mt = Uml::mt_Logical;
+            break;
+        case Uml::ot_Actor:
+        case Uml::ot_UseCase:
+            mt = Uml::mt_UseCase;
+            break;
+        case Uml::ot_Component:
+        case Uml::ot_Artifact:  // trouble: artifact can also appear at Deployment
+            mt = Uml::mt_Component;
+            break;
+        case Uml::ot_Node:
+            mt = Uml::mt_Deployment;
+            break;
+        case Uml::ot_Entity:
+        case Uml::ot_EntityAttribute:
+        case Uml::ot_UniqueConstraint:
+        case Uml::ot_ForeignKeyConstraint:
+        case Uml::ot_CheckConstraint:
+        case Uml::ot_Category:
+            mt = Uml::mt_EntityRelationship;
+            break;
+        case Uml::ot_Association:
+            {
+                UMLAssociation *assoc = static_cast<UMLAssociation*>(o);
+                UMLDoc *umldoc = UMLApp::app()->document();
+                for (int r = Uml::A; r <= Uml::B; ++r) {
+                    UMLObject *roleObj = assoc->getObject((Uml::Role_Type)r);
+                    if (roleObj == NULL) {
+                        // Ouch! we have been called while types are not yet resolved
+                        return Uml::N_MODELTYPES;
+                    }
+                    UMLPackage *pkg = roleObj->umlPackage();
+                    if (pkg) {
+                        while (pkg->umlPackage()) {  // wind back to root
+                            pkg = pkg->umlPackage();
+                        }
+                        const Uml::Model_Type m = umldoc->rootFolderType(pkg);
+                        if (m != Uml::N_MODELTYPES)
+                            return m;
+                    }
+                    mt = guessContainer(roleObj);
+                    if (mt != Uml::mt_Logical)
+                        break;
+                }
+            }
+            break;
+        default:
+            break;
+    }
+    return mt;
+}
+
+/**
+ * Parse a direction string into the Uml::Parameter_Direction.
+ *
+ * @param input  The string to parse: "in", "out", or "inout"
+ *               optionally followed by whitespace.
+ * @param result The corresponding Uml::Parameter_Direction.
+ * @return       Length of the string matched, excluding the optional
+ *               whitespace.
+ */
+int stringToDirection(QString input, Uml::Parameter_Direction & result) 
+{
+    QRegExp dirx("^(in|out|inout)");
+    int pos = dirx.indexIn(input);
+    if (pos == -1)
+        return 0;
+    const QString& dirStr = dirx.capturedTexts().first();
+    int dirLen = dirStr.length();
+    if (input.length() > dirLen && !input[dirLen].isSpace())
+        return 0;       // no match after all.
+    if (dirStr == "out")
+        result = Uml::pd_Out;
+    else if (dirStr == "inout")
+        result = Uml::pd_InOut;
+    else
+        result = Uml::pd_In;
+    return dirLen;
+}
+
+/**
+ * Parses a template parameter given in UML syntax.
+ *
+ * @param t             Input text of the template parameter.
+ *                      Example:  parname : partype
+ *                      or just:  parname          (for class type)
+ * @param nmTp          NameAndType returned by this method.
+ * @param owningScope   Pointer to the owning scope of the template param.
+ * @return      Error status of the parse, PS_OK for success.
+ */
+Parse_Status parseTemplate(QString t, NameAndType& nmTp, UMLClassifier *owningScope)
+{
+    UMLDoc *pDoc = UMLApp::app()->document();
+
+    t = t.trimmed();
+    if (t.isEmpty())
+        return PS_Empty;
+
+    QStringList nameAndType = t.split( QRegExp("\\s*:\\s*"));
+    if (nameAndType.count() == 2) {
+        UMLObject *pType = NULL;
+        if (nameAndType[1] != "class") {
+            pType = pDoc->findUMLObject(nameAndType[1], Uml::ot_UMLObject, owningScope);
+            if (pType == NULL)
+                return PS_Unknown_ArgType;
+        }
+        nmTp = NameAndType(nameAndType[0], pType);
+    } else {
+        nmTp = NameAndType(t, NULL);
+    }
+    return PS_OK;
+}
+
+/**
+ * Parses an attribute given in UML syntax.
+ *
+ * @param a             Input text of the attribute in UML syntax.
+ *                      Example:  argname : argtype
+ * @param nmTp          NameAndType returned by this method.
+ * @param owningScope   Pointer to the owning scope of the attribute.
+ * @param vis           Optional pointer to visibility (return value.)
+ *                      The visibility may be given at the beginning of the
+ *                      attribute text in mnemonic form as follows:
+ *                      "+"  stands for public
+ *                      "#"  stands for protected
+ *                      "-"  stands for private
+ *                      "~"  stands for implementation level visibility
+ *
+ * @return      Error status of the parse, PS_OK for success.
+ */
+Parse_Status parseAttribute(QString a, NameAndType& nmTp, UMLClassifier *owningScope,
+                            Uml::Visibility *vis /* = 0 */)
+{
+    UMLDoc *pDoc = UMLApp::app()->document();
+
+    a = a.simplified();
+    if (a.isEmpty())
+        return PS_Empty;
+
+    int colonPos = a.indexOf(':');
+    if (colonPos < 0) {
+        nmTp = NameAndType(a, NULL);
+        return PS_OK;
+    }
+    QString name = a.left(colonPos).trimmed();
+    if (vis) {
+        QRegExp mnemonicVis("^([\\+\\#\\-\\~] *)");
+        int pos = mnemonicVis.indexIn(name);
+        if (pos == -1) {
+            *vis = Uml::Visibility::Private;  // default value
+        } else {
+            QString caption = mnemonicVis.cap(1);
+            QString strVis = caption.left(1);
+            if (strVis == "+")
+                *vis = Uml::Visibility::Public;
+            else if (strVis == "#")
+                *vis = Uml::Visibility::Protected;
+            else if (strVis == "-")
+                *vis = Uml::Visibility::Private;
+            else
+                *vis = Uml::Visibility::Implementation;
+        }
+        name.remove(mnemonicVis);
+    }
+    Uml::Parameter_Direction pd = Uml::pd_In;
+    if (name.startsWith(QLatin1String("in "))) {
+        pd = Uml::pd_In;
+        name = name.mid(3);
+    } else if (name.startsWith(QLatin1String("inout "))) {
+        pd = Uml::pd_InOut;
+        name = name.mid(6);
+    } else if (name.startsWith(QLatin1String("out "))) {
+        pd = Uml::pd_Out;
+        name = name.mid(4);
+    }
+    a = a.mid(colonPos + 1).trimmed();
+    if (a.isEmpty()) {
+        nmTp = NameAndType(name, NULL, pd);
+        return PS_OK;
+    }
+    QStringList typeAndInitialValue = a.split( QRegExp("\\s*=\\s*") );
+    const QString &type = typeAndInitialValue[0];
+    UMLObject *pType = pDoc->findUMLObject(type, Uml::ot_UMLObject, owningScope);
+    if (pType == NULL) {
+        nmTp = NameAndType(name, NULL, pd);
+        return PS_Unknown_ArgType;
+    }
+    QString initialValue;
+    if (typeAndInitialValue.count() == 2) {
+        initialValue = typeAndInitialValue[1];
+    }
+    nmTp = NameAndType(name, pType, pd, initialValue);
+    return PS_OK;
+}
+
+/**
+ * Parses an operation given in UML syntax.
+ *
+ * @param m             Input text of the operation in UML syntax.
+ *                      Example of a two-argument operation returning "void":
+ *                      methodname (arg1name : arg1type, arg2name : arg2type) : void
+ * @param desc          OpDescriptor returned by this method.
+ * @param owningScope   Pointer to the owning scope of the operation.
+ * @return      Error status of the parse, PS_OK for success.
+ */
+Parse_Status parseOperation(QString m, OpDescriptor& desc, UMLClassifier *owningScope)
+{
+    UMLDoc *pDoc = UMLApp::app()->document();
+
+    m = m.simplified();
+    if (m.isEmpty())
+        return PS_Empty;
+    if (m.contains(QRegExp("operator *()"))) {
+        // C++ special case: two sets of parentheses
+        desc.m_name = "operator()";
+        m.remove(QRegExp("operator *()"));
+    } else {
+        /**
+         * The search pattern includes everything up to the opening parenthesis
+         * because UML also permits non programming-language oriented designs
+         * using narrative names, for example "check water temperature".
+         */
+        QRegExp beginningUpToOpenParenth( "^([^\\(]+)" );
+        int pos = beginningUpToOpenParenth.indexIn(m);
+        if (pos == -1)
+            return PS_Illegal_MethodName;
+        desc.m_name = beginningUpToOpenParenth.cap(1);
+    }
+    desc.m_pReturnType = NULL;
+    QRegExp pat = QRegExp("\\) *:(.*)$");
+    int pos = pat.indexIn(m);
+    if (pos != -1) {  // return type is optional
+        QString retType = pat.cap(1);
+        retType = retType.trimmed();
+        if (retType != "void") {
+            UMLObject *pRetType = owningScope->findTemplate(retType);
+            if (pRetType == NULL) {
+                pRetType = pDoc->findUMLObject(retType, Uml::ot_UMLObject, owningScope);
+                if (pRetType == NULL)
+                    return PS_Unknown_ReturnType;
+            }
+            desc.m_pReturnType = pRetType;
+        }
+    }
+    // Remove possible empty parentheses ()
+    m.remove( QRegExp("\\s*\\(\\s*\\)") );
+    desc.m_args.clear();
+    pat = QRegExp( "\\((.*)\\)" );
+    pos = pat.indexIn(m);
+    if (pos == -1)  // argument list is optional
+        return PS_OK;
+    QString arglist = pat.cap(1);
+    arglist = arglist.trimmed();
+    if (arglist.isEmpty())
+        return PS_OK;
+    const QStringList args = arglist.split( QRegExp("\\s*,\\s*") );
+    for (QStringList::ConstIterator lit = args.begin(); lit != args.end(); ++lit) {
+        NameAndType nmTp;
+        Parse_Status ps = parseAttribute(*lit, nmTp, owningScope);
+        if (ps)
+            return ps;
+        desc.m_args.append(nmTp);
+    }
+    return PS_OK;
+}
+
+/**
+ * Parses a constraint.
+ *
+ * @param m             Input text of the constraint
+ *
+ * @param name          The name returned by this method
+ * @param owningScope   Pointer to the owning scope of the constraint
+ * @return       Error status of the parse, PS_OK for success.
+ */
+Parse_Status parseConstraint(QString m, QString& name, UMLEntity* owningScope)
+{
+    Q_UNUSED(owningScope);
+    m = m.simplified();
+    if (m.isEmpty())
+        return PS_Empty;
+
+    int colonPos = m.indexOf(':');
+    if (colonPos < 0) {
+        name = m;
+        return PS_OK;
+    }
+
+    name = m.left(colonPos).trimmed();
+    return PS_OK;
+}
+
+/**
+ * Returns the Parse_Status as a text.
+ */
+QString psText(Parse_Status value)
+{
+    const QString text[] = {
+                               i18n("OK"), i18nc("parse status", "Empty"), i18n("Malformed argument"),
+                               i18n("Unknown argument type"), i18n("Illegal method name"),
+                               i18n("Unknown return type"), i18n("Unspecified error")
+                           };
+    return text[(unsigned) value];
+}
+
+/**
+ * Return string corresponding to the given Uml::Programming_Language.
+ */
+QString progLangToString(Uml::Programming_Language pl)
+{
+    switch (pl) {
+        case Uml::pl_ActionScript:
+            return "ActionScript";
+        case Uml::pl_Ada:
+            return "Ada";
+        case Uml::pl_Cpp:
+            return "C++";
+        case Uml::pl_CSharp:
+            return "C#";
+        case Uml::pl_D:
+            return "D";
+        case Uml::pl_IDL:
+            return "IDL";
+        case Uml::pl_Java:
+            return "Java";
+        case Uml::pl_JavaScript:
+            return "JavaScript";
+        case Uml::pl_MySQL:
+             return "MySQL";
+        case Uml::pl_Pascal:
+            return "Pascal";
+        case Uml::pl_Perl:
+            return "Perl";
+        case Uml::pl_PHP:
+            return "PHP";
+        case Uml::pl_PHP5:
+            return "PHP5";
+        case Uml::pl_PostgreSQL:
+            return "PostgreSQL";
+        case Uml::pl_Python:
+            return "Python";
+        case Uml::pl_Ruby:
+            return "Ruby";
+        case Uml::pl_SQL:
+            return "SQL";
+        case Uml::pl_Tcl:
+            return "Tcl";
+        case Uml::pl_Vala:
+            return "Vala";
+        case Uml::pl_XMLSchema:
+            return "XMLSchema";
+        default:
+            break;
+    }
+    return QString();
+}
+
+/**
+ * Return Uml::Programming_Language corresponding to the given string.
+ */
+Uml::Programming_Language stringToProgLang(QString str)
+{
+    if (str == "ActionScript")
+        return Uml::pl_ActionScript;
+    if (str == "Ada")
+        return Uml::pl_Ada;
+    if (str == "C++" || str == "Cpp")  // "Cpp" only for bkwd compatibility
+        return Uml::pl_Cpp;
+    if (str == "C#")
+        return Uml::pl_CSharp;
+    if (str == "D")
+        return Uml::pl_D;
+    if (str == "IDL")
+        return Uml::pl_IDL;
+    if (str == "Java")
+        return Uml::pl_Java;
+    if (str == "JavaScript")
+        return Uml::pl_JavaScript;
+    if (str == "MySQL")
+        return Uml::pl_MySQL;
+    if (str == "Pascal")
+        return Uml::pl_Pascal;
+    if (str == "Perl")
+        return Uml::pl_Perl;
+    if (str == "PHP")
+        return Uml::pl_PHP;
+    if (str == "PHP5")
+        return Uml::pl_PHP5;
+    if (str == "PostgreSQL")
+        return Uml::pl_PostgreSQL;
+    if (str == "Python")
+        return Uml::pl_Python;
+    if (str == "Ruby")
+        return Uml::pl_Ruby;
+    if (str == "SQL")
+        return Uml::pl_SQL;
+    if (str == "Tcl")
+        return Uml::pl_Tcl;
+    if (str == "Vala")
+        return Uml::pl_Vala;
+    if (str == "XMLSchema")
+        return Uml::pl_XMLSchema;
+    return Uml::pl_Reserved;
+}
+
+/**
+ * Return true if the listview type is one of the predefined root views
+ * (root, logical, usecase, component, deployment, datatype, or entity-
+ * relationship view.)
+ */
+bool typeIsRootView(Uml::ListView_Type type)
+{
+    switch (type) {
+        case Uml::lvt_View:
+        case Uml::lvt_Logical_View:
+        case Uml::lvt_UseCase_View:
+        case Uml::lvt_Component_View:
+        case Uml::lvt_Deployment_View:
+        case Uml::lvt_EntityRelationship_Model:
+            return true;
+            break;
+        default:
+            break;
+    }
+    return false;
+}
+
+/**
+ * Return true if the listview type also has a widget representation in diagrams.
+ */
+bool typeIsCanvasWidget(Uml::ListView_Type type)
+{
+    switch (type) {
+        case Uml::lvt_Actor:
+        case Uml::lvt_UseCase:
+        case Uml::lvt_Class:
+        case Uml::lvt_Package:
+        case Uml::lvt_Logical_Folder:
+        case Uml::lvt_UseCase_Folder:
+        case Uml::lvt_Component_Folder:
+        case Uml::lvt_Deployment_Folder:
+        case Uml::lvt_EntityRelationship_Folder:
+        case Uml::lvt_Subsystem:
+        case Uml::lvt_Component:
+        case Uml::lvt_Node:
+        case Uml::lvt_Artifact:
+        case Uml::lvt_Interface:
+        case Uml::lvt_Datatype:
+        case Uml::lvt_Enum:
+        case Uml::lvt_Entity:
+        case Uml::lvt_Category:
+            return true;
+            break;
+        default:
+            break;
+    }
+    return false;
+}
+
+/**
+ * Return true if the listview type is a logical, usecase or component folder.
+ */
+bool typeIsFolder(Uml::ListView_Type type)
+{
+    if (typeIsRootView(type) ||
+            type == Uml::lvt_Datatype_Folder ||
+            type == Uml::lvt_Logical_Folder ||
+            type == Uml::lvt_UseCase_Folder ||
+            type == Uml::lvt_Component_Folder ||
+            type == Uml::lvt_Deployment_Folder ||
+            type == Uml::lvt_EntityRelationship_Folder) {
+        return true;
+    } else {
+        return false;
+    }
+}
+
+/**
+ * Return true if the listview type may act as a container for other objects,
+ * i.e. if it is a folder, package, subsystem, or component.
+ */
+bool typeIsContainer(Uml::ListView_Type type)
+{
+    if (typeIsFolder(type))
+        return true;
+    return (type == Uml::lvt_Package ||
+            type == Uml::lvt_Subsystem ||
+            type == Uml::lvt_Component);
+}
+
+/**
+ * Return true if the listview type is an attribute, operation, or template.
+ */
+bool typeIsClassifierList(Uml::ListView_Type type)
+{
+    if (type == Uml::lvt_Attribute ||
+        type == Uml::lvt_Operation ||
+        type == Uml::lvt_Template ||
+        type == Uml::lvt_EntityAttribute ||
+        type == Uml::lvt_UniqueConstraint ||
+        type == Uml::lvt_ForeignKeyConstraint ||
+        type == Uml::lvt_PrimaryKeyConstraint ||
+        type == Uml::lvt_CheckConstraint  ||
+        type == Uml::lvt_EnumLiteral) {
+        return true;
+    } else {
+        return false;
+    }
+}
+
+/**
+ * Return true if the listview type is a classifier ( Class, Entity , Enum )
+ */
+bool typeIsClassifier(Uml::ListView_Type type)
+{
+    if ( type == Uml::lvt_Class ||
+         type == Uml::lvt_Interface ||
+         type == Uml::lvt_Entity ||
+         type == Uml::lvt_Enum ) {
+        return true;
+    }
+    return false;
+}
+
+/**
+ * Return true if the listview type is a diagram.
+ */
+bool typeIsDiagram(Uml::ListView_Type type)
+{
+    if (type == Uml::lvt_Class_Diagram ||
+            type == Uml::lvt_Collaboration_Diagram ||
+            type == Uml::lvt_State_Diagram ||
+            type == Uml::lvt_Activity_Diagram ||
+            type == Uml::lvt_Sequence_Diagram ||
+            type == Uml::lvt_UseCase_Diagram ||
+            type == Uml::lvt_Component_Diagram ||
+            type == Uml::lvt_Deployment_Diagram ||
+            type == Uml::lvt_EntityRelationship_Diagram) {
+        return true;
+    } else {
+        return false;
+    }
+}
+
+/**
+ * Return the Model_Type which corresponds to the given Diagram_Type.
+ */
+Uml::Model_Type convert_DT_MT(Uml::Diagram_Type dt)
+{
+    Uml::Model_Type mt;
+    switch (dt) {
+        case Uml::dt_UseCase:
+            mt = Uml::mt_UseCase;
+            break;
+        case Uml::dt_Collaboration:
+        case Uml::dt_Class:
+        case Uml::dt_Sequence:
+        case Uml::dt_State:
+        case Uml::dt_Activity:
+            mt = Uml::mt_Logical;
+            break;
+        case Uml::dt_Component:
+            mt = Uml::mt_Component;
+            break;
+        case Uml::dt_Deployment:
+            mt = Uml::mt_Deployment;
+            break;
+        case Uml::dt_EntityRelationship:
+            mt = Uml::mt_EntityRelationship;
+            break;
+        default:
+            uError() << "Model_Utils::convert_DT_MT: illegal input value " << dt;
+            mt = Uml::N_MODELTYPES;
+            break;
+    }
+    return mt;
+}
+
+/**
+ * Return the ListView_Type which corresponds to the given Model_Type.
+ */
+Uml::ListView_Type convert_MT_LVT(Uml::Model_Type mt)
+{
+    Uml::ListView_Type lvt = Uml::lvt_Unknown;
+    switch (mt) {
+        case Uml::mt_Logical:
+            lvt = Uml::lvt_Logical_View;
+            break;
+        case Uml::mt_UseCase:
+            lvt = Uml::lvt_UseCase_View;
+            break;
+        case Uml::mt_Component:
+            lvt = Uml::lvt_Component_View;
+            break;
+        case Uml::mt_Deployment:
+            lvt = Uml::lvt_Deployment_View;
+            break;
+        case Uml::mt_EntityRelationship:
+            lvt = Uml::lvt_EntityRelationship_Model;
+            break;
+        default:
+            break;
+    }
+    return lvt;
+}
+
+/**
+ * Return the Model_Type which corresponds to the given ListView_Type.
+ * Returns Uml::N_MODELTYPES if the list view type given does not map
+ * to a Model_Type.
+ */
+Uml::Model_Type convert_LVT_MT(Uml::ListView_Type lvt)
+{
+    Uml::Model_Type mt = Uml::N_MODELTYPES;
+    switch (lvt) {
+        case Uml::lvt_Logical_View:
+            mt = Uml::mt_Logical;
+            break;
+        case Uml::lvt_UseCase_View:
+            mt = Uml::mt_UseCase;
+            break;
+        case Uml::lvt_Component_View:
+            mt = Uml::mt_Component;
+            break;
+        case Uml::lvt_Deployment_View:
+            mt = Uml::mt_Deployment;
+            break;
+        case Uml::lvt_EntityRelationship_Model:
+            mt = Uml::mt_EntityRelationship;
+            break;
+        default:
+            break;
+    }
+    return mt;
+}
+
+/**
+ * Convert a diagram type enum to the equivalent list view type.
+ */
+Uml::ListView_Type convert_DT_LVT(Uml::Diagram_Type dt)
+{
+    Uml::ListView_Type type =  Uml::lvt_Unknown;
+    switch(dt) {
+    case Uml::dt_UseCase:
+        type = Uml::lvt_UseCase_Diagram;
+        break;
+
+    case Uml::dt_Class:
+        type = Uml::lvt_Class_Diagram;
+        break;
+
+    case Uml::dt_Sequence:
+        type = Uml::lvt_Sequence_Diagram;
+        break;
+
+    case Uml::dt_Collaboration:
+        type = Uml::lvt_Collaboration_Diagram;
+        break;
+
+    case Uml::dt_State:
+        type = Uml::lvt_State_Diagram;
+        break;
+
+    case Uml::dt_Activity:
+        type = Uml::lvt_Activity_Diagram;
+        break;
+
+    case Uml::dt_Component:
+        type = Uml::lvt_Component_Diagram;
+        break;
+
+    case Uml::dt_Deployment:
+        type = Uml::lvt_Deployment_Diagram;
+        break;
+
+    case Uml::dt_EntityRelationship:
+        type = Uml::lvt_EntityRelationship_Diagram;
+        break;
+
+    default:
+        uWarning() << "convert_DT_LVT() called on unknown diagram type";
+    }
+    return type;
+}
+
+/**
+ * Convert an object's type to the equivalent list view type
+ *
+ * @param o  Pointer to the UMLObject whose type shall be converted
+ *           to the equivalent Uml::ListView_Type.  We cannot just
+ *           pass in a Uml::Object_Type because a UMLFolder is mapped
+ *           to different Uml::ListView_Type values, depending on its
+ *           location in one of the predefined modelviews (Logical/
+ *           UseCase/etc.)
+ * @return  The equivalent Uml::ListView_Type.
+ */
+Uml::ListView_Type convert_OT_LVT(UMLObject *o)
+{
+    Uml::Object_Type ot = o->baseType();
+    Uml::ListView_Type type =  Uml::lvt_Unknown;
+    switch(ot) {
+    case Uml::ot_UseCase:
+        type = Uml::lvt_UseCase;
+        break;
+
+    case Uml::ot_Actor:
+        type = Uml::lvt_Actor;
+        break;
+
+    case Uml::ot_Class:
+        type = Uml::lvt_Class;
+        break;
+
+    case Uml::ot_Package:
+        type = Uml::lvt_Package;
+        break;
+
+    case Uml::ot_Folder:
+        {
+            UMLDoc *umldoc = UMLApp::app()->document();
+            UMLFolder *f = static_cast<UMLFolder*>(o);
+            do {
+                const Uml::Model_Type mt = umldoc->rootFolderType(f);
+                if (mt != Uml::N_MODELTYPES) {
+                    switch (mt) {
+                        case Uml::mt_Logical:
+                            type = Uml::lvt_Logical_Folder;
+                            break;
+                        case Uml::mt_UseCase:
+                            type = Uml::lvt_UseCase_Folder;
+                            break;
+                        case Uml::mt_Component:
+                            type = Uml::lvt_Component_Folder;
+                            break;
+                        case Uml::mt_Deployment:
+                            type = Uml::lvt_Deployment_Folder;
+                            break;
+                        case Uml::mt_EntityRelationship:
+                            type = Uml::lvt_EntityRelationship_Folder;
+                            break;
+                        default:
+                            break;
+                    }
+                    return type;
+                }
+            } while ((f = static_cast<UMLFolder*>(f->umlPackage())) != NULL);
+            uError() << "convert_OT_LVT(" << o->name()
+                << "): internal error - object is not properly nested in folder";
+        }
+        break;
+
+    case Uml::ot_Component:
+        type = Uml::lvt_Component;
+        break;
+
+    case Uml::ot_Node:
+        type = Uml::lvt_Node;
+        break;
+
+    case Uml::ot_Artifact:
+        type = Uml::lvt_Artifact;
+        break;
+
+    case Uml::ot_Interface:
+        type = Uml::lvt_Interface;
+        break;
+
+    case Uml::ot_Datatype:
+        type = Uml::lvt_Datatype;
+        break;
+
+    case Uml::ot_Enum:
+        type = Uml::lvt_Enum;
+        break;
+
+    case Uml::ot_EnumLiteral:
+        type = Uml::lvt_EnumLiteral;
+        break;
+
+    case Uml::ot_Entity:
+        type = Uml::lvt_Entity;
+        break;
+
+    case Uml::ot_Category:
+        type = Uml::lvt_Category;
+        break;
+
+    case Uml::ot_EntityAttribute:
+        type = Uml::lvt_EntityAttribute;
+        break;
+
+    case Uml::ot_UniqueConstraint: {
+         UMLEntity* ent = static_cast<UMLEntity*>(o->parent());
+         UMLUniqueConstraint* uc = static_cast<UMLUniqueConstraint*>( o );
+         if ( ent->isPrimaryKey( uc ) ) {
+             type = Uml::lvt_PrimaryKeyConstraint;
+         } else {
+             type = Uml::lvt_UniqueConstraint;
+         }
+         break;
+        }
+
+    case Uml::ot_ForeignKeyConstraint:
+        type = Uml::lvt_ForeignKeyConstraint;
+        break;
+
+    case Uml::ot_CheckConstraint:
+        type = Uml::lvt_CheckConstraint;
+        break;
+
+    case Uml::ot_Attribute:
+        type = Uml::lvt_Attribute;
+        break;
+
+    case Uml::ot_Operation:
+        type = Uml::lvt_Operation;
+        break;
+
+    case Uml::ot_Template:
+        type = Uml::lvt_Template;
+        break;
+    default:
+        break;
+    }
+    return type;
+}
+
+/**
+ * Converts a list view type enum to the equivalent object type.
+ *
+ * @param lvt   The ListView_Type to convert.
+ * @return  The converted Object_Type if the listview type
+ *          has a Uml::Object_Type representation, else 0.
+ */
+Uml::Object_Type convert_LVT_OT(Uml::ListView_Type lvt)
+{
+    Uml::Object_Type ot = (Uml::Object_Type)0;
+    switch (lvt) {
+    case Uml::lvt_UseCase:
+        ot = Uml::ot_UseCase;
+        break;
+
+    case Uml::lvt_Actor:
+        ot = Uml::ot_Actor;
+        break;
+
+    case Uml::lvt_Class:
+        ot = Uml::ot_Class;
+        break;
+
+    case Uml::lvt_Package:
+    case Uml::lvt_Subsystem:
+        ot = Uml::ot_Package;
+        break;
+
+    case Uml::lvt_Component:
+        ot = Uml::ot_Component;
+        break;
+
+    case Uml::lvt_Node:
+        ot = Uml::ot_Node;
+        break;
+
+    case Uml::lvt_Artifact:
+        ot = Uml::ot_Artifact;
+        break;
+
+    case Uml::lvt_Interface:
+        ot = Uml::ot_Interface;
+        break;
+
+    case Uml::lvt_Datatype:
+        ot = Uml::ot_Datatype;
+        break;
+
+    case Uml::lvt_Enum:
+        ot = Uml::ot_Enum;
+        break;
+
+    case Uml::lvt_Entity:
+        ot = Uml::ot_Entity;
+        break;
+
+    case Uml::lvt_Category:
+        ot = Uml::ot_Category;
+        break;
+
+    case Uml::lvt_EntityAttribute:
+        ot = Uml::ot_EntityAttribute;
+        break;
+
+    case Uml::lvt_UniqueConstraint:
+        ot = Uml::ot_UniqueConstraint;
+        break;
+
+    case Uml::lvt_PrimaryKeyConstraint:
+        ot = Uml::ot_UniqueConstraint;
+        break;
+
+    case Uml::lvt_ForeignKeyConstraint:
+        ot = Uml::ot_ForeignKeyConstraint;
+        break;
+
+    case Uml::lvt_CheckConstraint:
+        ot = Uml::ot_CheckConstraint;
+        break;
+
+    case Uml::lvt_Attribute:
+        ot = Uml::ot_Attribute;
+        break;
+
+    case Uml::lvt_Operation:
+        ot = Uml::ot_Operation;
+        break;
+
+    case Uml::lvt_Template:
+        ot = Uml::ot_Template;
+        break;
+
+    case Uml::lvt_EnumLiteral:
+        ot = Uml::ot_EnumLiteral;
+        break;
+
+    default:
+        if (typeIsFolder(lvt))
+            ot = Uml::ot_Folder;
+        break;
+    }
+    return ot;
+}
+
+/**
+ * Return the Icon_Type which corresponds to the given listview type.
+ *
+ * @param lvt  ListView_Type to convert.
+ * @return  The Icon_Utils::Icon_Type corresponding to the lvt.
+ *          Returns it_Home in case no mapping to Uml::Icon_Type exists.
+ */
+Icon_Utils::Icon_Type convert_LVT_IT(Uml::ListView_Type lvt)
+{
+    Icon_Utils::Icon_Type icon = Icon_Utils::it_Home;
+    switch (lvt) {
+        case Uml::lvt_UseCase_View:
+        case Uml::lvt_UseCase_Folder:
+            icon = Icon_Utils::it_Folder_Grey;
+            break;
+        case Uml::lvt_Logical_View:
+        case Uml::lvt_Logical_Folder:
+            icon = Icon_Utils::it_Folder_Green;
+            break;
+        case Uml::lvt_Datatype_Folder:
+            icon = Icon_Utils::it_Folder_Orange;
+            break;
+        case Uml::lvt_Component_View:
+        case Uml::lvt_Component_Folder:
+            icon = Icon_Utils::it_Folder_Red;
+            break;
+        case Uml::lvt_Deployment_View:
+        case Uml::lvt_Deployment_Folder:
+            icon = Icon_Utils::it_Folder_Violet;
+            break;
+        case Uml::lvt_EntityRelationship_Model:
+        case Uml::lvt_EntityRelationship_Folder:
+            icon = Icon_Utils::it_Folder_Cyan;
+            break;
+
+        case Uml::lvt_Actor:
+            icon = Icon_Utils::it_Actor;
+            break;
+        case Uml::lvt_UseCase:
+            icon = Icon_Utils::it_UseCase;
+            break;
+        case Uml::lvt_Class:
+            icon = Icon_Utils::it_Class;
+            break;
+        case Uml::lvt_Package:
+            icon = Icon_Utils::it_Package;
+            break;
+        case Uml::lvt_Subsystem:
+            icon = Icon_Utils::it_Subsystem;
+            break;
+        case Uml::lvt_Component:
+            icon = Icon_Utils::it_Component;
+            break;
+        case Uml::lvt_Node:
+            icon = Icon_Utils::it_Node;
+            break;
+        case Uml::lvt_Artifact:
+            icon = Icon_Utils::it_Artifact;
+            break;
+        case Uml::lvt_Interface:
+            icon = Icon_Utils::it_Interface;
+            break;
+        case Uml::lvt_Datatype:
+            icon = Icon_Utils::it_Datatype;
+            break;
+        case Uml::lvt_Enum:
+            icon = Icon_Utils::it_Enum;
+            break;
+        case Uml::lvt_Entity:
+            icon = Icon_Utils::it_Entity;
+            break;
+        case Uml::lvt_Category:
+            icon = Icon_Utils::it_Category;
+            break;
+        case Uml::lvt_Template:
+            icon = Icon_Utils::it_Template;
+            break;
+        case Uml::lvt_Attribute:
+            icon = Icon_Utils::it_Private_Attribute;
+            break;
+        case Uml::lvt_EntityAttribute:
+            icon = Icon_Utils::it_Private_Attribute;
+            break;
+        case Uml::lvt_EnumLiteral:
+            icon = Icon_Utils::it_Public_Attribute;
+            break;
+        case Uml::lvt_Operation:
+            icon = Icon_Utils::it_Public_Method;
+            break;
+        case Uml::lvt_UniqueConstraint:
+            icon = Icon_Utils::it_Unique_Constraint;
+            break;
+        case Uml::lvt_PrimaryKeyConstraint:
+            icon = Icon_Utils::it_PrimaryKey_Constraint;
+            break;
+        case Uml::lvt_ForeignKeyConstraint:
+            icon = Icon_Utils::it_ForeignKey_Constraint;
+            break;
+        case Uml::lvt_CheckConstraint:
+            icon = Icon_Utils::it_Check_Constraint;
+            break;
+        case Uml::lvt_Class_Diagram:
+            icon = Icon_Utils::it_Diagram_Class;
+            break;
+        case Uml::lvt_UseCase_Diagram:
+            icon = Icon_Utils::it_Diagram_Usecase;
+            break;
+        case Uml::lvt_Sequence_Diagram:
+            icon = Icon_Utils::it_Diagram_Sequence;
+            break;
+        case Uml::lvt_Collaboration_Diagram:
+            icon = Icon_Utils::it_Diagram_Collaboration;
+            break;
+        case Uml::lvt_State_Diagram:
+            icon = Icon_Utils::it_Diagram_State;
+            break;
+        case Uml::lvt_Activity_Diagram:
+            icon = Icon_Utils::it_Diagram_Activity;
+            break;
+        case Uml::lvt_Component_Diagram:
+            icon = Icon_Utils::it_Diagram_Component;
+            break;
+        case Uml::lvt_Deployment_Diagram:
+            icon = Icon_Utils::it_Diagram_Deployment;
+            break;
+        case Uml::lvt_EntityRelationship_Diagram:
+            icon = Icon_Utils::it_Diagram_EntityRelationship;
+            break;
+
+        default:
+            break;
+    }
+    return icon;
+}
+
+/**
+ * Return the Diagram_Type which corresponds to the given listview type.
+ *
+ * @param lvt  ListView_Type to convert.
+ * @return  The Uml::Diagram_Type corresponding to the lvt.
+ *          Returns dt_Undefined in case no mapping to Diagram_Type exists.
+ */
+Uml::Diagram_Type convert_LVT_DT(Uml::ListView_Type lvt)
+{
+    Uml::Diagram_Type dt = Uml::dt_Undefined;
+    switch (lvt) {
+        case Uml::lvt_Class_Diagram:
+            dt = Uml::dt_Class;
+            break;
+        case Uml::lvt_UseCase_Diagram:
+            dt = Uml::dt_UseCase;
+            break;
+        case Uml::lvt_Sequence_Diagram:
+            dt = Uml::dt_Sequence;
+            break;
+        case Uml::lvt_Collaboration_Diagram:
+            dt = Uml::dt_Collaboration;
+            break;
+        case Uml::lvt_State_Diagram:
+            dt = Uml::dt_State;
+            break;
+        case Uml::lvt_Activity_Diagram:
+            dt = Uml::dt_Activity;
+            break;
+        case Uml::lvt_Component_Diagram:
+            dt = Uml::dt_Component;
+            break;
+        case Uml::lvt_Deployment_Diagram:
+            dt = Uml::dt_Deployment;
+            break;
+        case Uml::lvt_EntityRelationship_Diagram:
+            dt = Uml::dt_EntityRelationship;
+            break;
+        default:
+            break;
+    }
+    return dt;
+}
+
+/**
+ * Return the Model_Type which corresponds to the given Object_Type.
+ */
+Uml::Model_Type convert_OT_MT(Uml::Object_Type ot)
+{
+    Uml::Model_Type mt = Uml::N_MODELTYPES;
+    switch (ot) {
+        case Uml::ot_Actor:
+        case Uml::ot_UseCase:
+            mt = Uml::mt_UseCase;
+            break;
+        case Uml::ot_Component:
+        case Uml::ot_Artifact:
+            mt = Uml::mt_Component;
+            break;
+        case Uml::ot_Node:
+            mt = Uml::mt_Deployment;
+            break;
+        case Uml::ot_Entity:
+        case Uml::ot_EntityAttribute:
+        case Uml::ot_UniqueConstraint:
+        case Uml::ot_ForeignKeyConstraint:
+        case Uml::ot_CheckConstraint:
+        case Uml::ot_Category:
+            mt = Uml::mt_EntityRelationship;
+            break;
+        default:
+            mt = Uml::mt_Logical;
+            break;
+    }
+    return mt;
+}
+
+/**
+ * Converts from the UpdateDeleteAction enum to a QString
+ * @param uda The UpdateDeleteAction enum literal
+ */
+QString updateDeleteActionToString( UMLForeignKeyConstraint::UpdateDeleteAction uda )
+{
+    switch( uda ) {
+     case UMLForeignKeyConstraint::uda_NoAction:
+         return "NO ACTION";
+     case  UMLForeignKeyConstraint::uda_Restrict:
+         return "RESTRICT";
+     case UMLForeignKeyConstraint::uda_Cascade:
+         return "CASCADE";
+     case  UMLForeignKeyConstraint::uda_SetNull:
+         return "SET NULL";
+     case  UMLForeignKeyConstraint::uda_SetDefault:
+         return "SET DEFAULT";
+     default:
+         return QString();
+    }
+}
+
+/**
+ * Return string corresponding to Uml::Diagram_Type
+ */
+QString diagramTypeToString(Uml::Diagram_Type dt)
+{
+    switch( dt ) {
+       case Uml::dt_Class:
+           return i18n( "Class Diagram" );
+       case Uml::dt_UseCase:
+           return i18n( "Use Case Diagram" );
+       case Uml::dt_Sequence:
+           return i18n( "Sequence Diagram" );
+       case Uml::dt_Collaboration:
+           return i18n( "Collaboration Diagram" );
+       case Uml::dt_State:
+           return i18n( "State Diagram" );
+       case Uml::dt_Activity:
+           return i18n( "Activity Diagram" );
+       case Uml::dt_Component:
+           return i18n( "Component Diagram" );
+       case Uml::dt_Deployment:
+           return i18n( "Deployment Diagram" );
+       case Uml::dt_EntityRelationship:
+           return i18n( "Entity Relationship Diagram" );
+       default:
+           return i18n( "No Diagram" );
+    }
+}
+
+}  // namespace Model_Utils
+

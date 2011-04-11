@@ -1,0 +1,13 @@
+K 10
+svn:ignore
+V 101
+*.moc
+.libs
+CMakeFiles
+DartTestfile.txt
+Makefile
+Makefile.in
+cmake_install.cmake
+install_icons.cmake
+
+END
