@@ -64,10 +64,10 @@ namespace Uml
     class Visibility {
     public:
         enum Value {
-            Public,
-            Private,
-            Protected,
-            Implementation, // objects marked with this are declared in the implementation file.
+            Public = 0,
+            Private = 1,
+            Protected = 2,
+            Implementation = 4, // objects marked with this are declared in the implementation file.
             FromParent = 3  // alias for Implementation, used by CodeGenerationPolicy
         };
         Visibility();

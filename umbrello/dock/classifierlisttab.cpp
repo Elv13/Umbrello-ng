@@ -323,7 +323,7 @@ pGuiModel* ClassifierListTab::addRow()
     pGuiModel* aRow = new pGuiModel;
     switch (m_itemType) {
     case ot_Attribute: {
-        QTableWidgetItem* nameWidget = new QTableWidgetItem("test");
+        QTableWidgetItem* nameWidget = new QTableWidgetItem("");
         nameWidget->setFlags(Qt::ItemIsEditable|Qt::ItemIsEnabled);
         m_centralTableTW->setItem(m_rowCount,0,nameWidget);
         aRow->name = nameWidget;
@@ -334,7 +334,7 @@ pGuiModel* ClassifierListTab::addRow()
         m_centralTableTW->setCellWidget(m_rowCount,1,typeCbb);
         aRow->type = typeCbb;
         
-        QTableWidgetItem* inititalWidget = new QTableWidgetItem("test");
+        QTableWidgetItem* inititalWidget = new QTableWidgetItem("");
         inititalWidget->setFlags(Qt::ItemIsEditable|Qt::ItemIsEnabled);
         m_centralTableTW->setItem(m_rowCount,2,inititalWidget);
         aRow->initial = inititalWidget;
@@ -347,7 +347,7 @@ pGuiModel* ClassifierListTab::addRow()
         m_centralTableTW->setCellWidget(m_rowCount,3,visibilityCbb);
         aRow->visibility = visibilityCbb;
         
-        QTableWidgetItem* stereotypeWidget = new QTableWidgetItem("test");
+        QTableWidgetItem* stereotypeWidget = new QTableWidgetItem("");
         stereotypeWidget->setFlags(Qt::ItemIsEditable|Qt::ItemIsEnabled);
         m_centralTableTW->setItem(m_rowCount,4,stereotypeWidget);
         aRow->stereotype = stereotypeWidget;
@@ -366,7 +366,7 @@ pGuiModel* ClassifierListTab::addRow()
       break;
     case ot_Operation: {
         typeName = i18n("Operations");
-        QTableWidgetItem* nameWidget = new QTableWidgetItem("test");
+        QTableWidgetItem* nameWidget = new QTableWidgetItem("");
         nameWidget->setFlags(Qt::ItemIsEditable|Qt::ItemIsEnabled);
         m_centralTableTW->setItem(m_rowCount,0,nameWidget);
         aRow->name = nameWidget;
@@ -389,7 +389,7 @@ pGuiModel* ClassifierListTab::addRow()
         m_centralTableTW->setCellWidget(m_rowCount,3,visibilityCbb);
         aRow->visibility = visibilityCbb;
         
-        QTableWidgetItem* stereotypeWidget = new QTableWidgetItem("test");
+        QTableWidgetItem* stereotypeWidget = new QTableWidgetItem("");
         stereotypeWidget->setFlags(Qt::ItemIsEditable|Qt::ItemIsEnabled);
         m_centralTableTW->setItem(m_rowCount,4,stereotypeWidget);
         aRow->stereotype = stereotypeWidget;
@@ -421,7 +421,7 @@ pGuiModel* ClassifierListTab::addRow()
       break;
     case ot_Template: {
         typeName = i18n("Templates");
-        QTableWidgetItem* nameWidget = new QTableWidgetItem("test");
+        QTableWidgetItem* nameWidget = new QTableWidgetItem("");
         nameWidget->setFlags(Qt::ItemIsEditable|Qt::ItemIsEnabled);
         m_centralTableTW->setItem(m_rowCount,0,nameWidget);
         aRow->name = nameWidget;
@@ -432,7 +432,7 @@ pGuiModel* ClassifierListTab::addRow()
         m_centralTableTW->setCellWidget(m_rowCount,1,typeCbb);
         aRow->type = typeCbb;
         
-        QTableWidgetItem* stereotypeWidget = new QTableWidgetItem("test");
+        QTableWidgetItem* stereotypeWidget = new QTableWidgetItem("");
         stereotypeWidget->setFlags(Qt::ItemIsEditable|Qt::ItemIsEnabled);
         m_centralTableTW->setItem(m_rowCount,2,stereotypeWidget);
         aRow->stereotype = stereotypeWidget;
@@ -442,13 +442,13 @@ pGuiModel* ClassifierListTab::addRow()
       break;
     case ot_EnumLiteral: {
         typeName = i18n("Enum Literals");
-        QTableWidgetItem* nameWidget = new QTableWidgetItem("test");
+        QTableWidgetItem* nameWidget = new QTableWidgetItem("");
         nameWidget->setFlags(Qt::ItemIsEditable|Qt::ItemIsEnabled);
         m_centralTableTW->setItem(m_rowCount,0,nameWidget);
         aRow->name = nameWidget;
         pGuiModel::linker[nameWidget] = aRow;
         
-        QTableWidgetItem* valWidget = new QTableWidgetItem("test");
+        QTableWidgetItem* valWidget = new QTableWidgetItem("");
         valWidget->setFlags(Qt::ItemIsEditable|Qt::ItemIsEnabled);
         m_centralTableTW->setItem(m_rowCount,1,valWidget);
         aRow->defaultValue = valWidget;
@@ -514,14 +514,37 @@ void ClassifierListTab::reloadItemListBox()
                 aRow->abstract->setChecked(isAbstract);
               
               //QPushButton* aRow->parameters;//TODO ELV
-              //aRow->type->lineEdit()->setText(listItem->baseType());
-              //QCheckBox* aRow->constV->setChecked();
-              /*KComboBox* aRow->visibility;
-              QTableWidgetItem* aRow->stereotype;
-              QPushButton* aRow->documentation;
-              QPushButton* aRow->source;
-              QTableWidgetItem* aRow->initial;
-              QTableWidgetItem* aRow->defaultValue;*/
+                
+              if (aRow->type)
+                aRow->type->lineEdit()->setText(listItem->getTypeName());
+              
+              
+              if (aRow->visibility) {
+                if (listItem->visibility() == Uml::Visibility::Implementation) //TODO ELV find why only Uml::Visibility::FromParent -need- to be "3"
+                  aRow->visibility->setCurrentIndex(3);
+                else
+                  aRow->visibility->setCurrentIndex(listItem->visibility());
+              }
+              
+              if (aRow->constV)
+                if (qobject_cast<UMLOperation*>(listItem))
+                  aRow->constV->setChecked(qobject_cast<UMLOperation*>(listItem)->getConst());
+                
+              if (aRow->source)
+                if (qobject_cast<UMLOperation*>(listItem))
+                  aRow->source->setToolTip(qobject_cast<UMLOperation*>(listItem)->getSourceCode());
+              
+              if (aRow->documentation)
+                aRow->documentation->setToolTip(listItem->doc());
+              
+              if (aRow->stereotype)
+                aRow->stereotype->setText(listItem->stereotype());
+              
+              if (aRow->initial)
+                if (qobject_cast<UMLAttribute*>(listItem))
+                  aRow->initial->setText(qobject_cast<UMLAttribute*>(listItem)->getInitialValue());
+                
+              //QTableWidgetItem* aRow->defaultValue;//TODO
               
               aRow->setReady();
               connect( listItem, SIGNAL(modified()),this,SLOT(slotListItemModified()) );
