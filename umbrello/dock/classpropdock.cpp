@@ -148,8 +148,8 @@ ClassPropDock::ClassPropDock(QWidget *parent, UMLWidget *w)
     if (w->baseType() == Uml::wt_Class || w->baseType() == Uml::wt_Interface) {
         setupDisplayPage();
     }
-    setupColorPage();
-    setupFontPage();
+    //setupColorPage();
+    //setupFontPage();
     connect(this,SIGNAL(okClicked()),this,SLOT(slotOk()));
     connect(this,SIGNAL(applyClicked()),this,SLOT(slotApply()));
 }
@@ -173,17 +173,15 @@ void ClassPropDock::setUMLWidget(UMLWidget *w) {
         updatePages();
         }
     } else if (w->baseType() == Uml::wt_Node) {
-        setupInstancePages();
+        setupInstancePages(); //TODO ELV
     } else {
         //setupPages();
         updatePages();
     }
     
-     if (w->baseType() == Uml::wt_Class || w->baseType() == Uml::wt_Interface) {
-        setupDisplayPage();
-    }
-    setupColorPage();
-    setupFontPage();
+     
+    //setupColorPage();
+    //setupFontPage();
   }
 }
 
@@ -208,12 +206,7 @@ void ClassPropDock::init()
     m_pColorPage = 0;
     m_pDoc = UMLApp::app()->document();
     m_pTabWidget = new QTabWidget();
-    QPushButton* aButton = new QPushButton("test");
-    QWidget* centralWidget = new QWidget();
-    QVBoxLayout* mainLayout = new QVBoxLayout(centralWidget);
-    mainLayout->addWidget(aButton);
-    mainLayout->addWidget(m_pTabWidget);
-    setWidget(centralWidget);
+    setWidget(m_pTabWidget);
     setupPages();
 }
 
@@ -303,15 +296,28 @@ void ClassPropDock::setupPages(bool assoc)
     //} else {
         m_pAssocPage = 0;
     //}
+        
+    //setupColorPage(); //TODO ELV
+    //setupFontPage(); //TODO ELV
+        
+    if (m_pWidget) {
+      if (m_pWidget->baseType() == Uml::wt_Class || m_pWidget->baseType() == Uml::wt_Interface) {
+          setupDisplayPage();
+      }
+    }
 }
 
 void ClassPropDock::updatePages()
 {
+    m_pGenPage->setObject(m_pObject);
     m_pAttPage->setClassifier((UMLClassifier*)m_pObject);
     m_pOpsPage->setClassifier((UMLClassifier*)m_pObject);
     m_pTemplatePage->setClassifier((UMLClassifier*)m_pObject);
     m_pEnumLiteralPage->setClassifier((UMLClassifier*)m_pObject);
     m_pEntityAttributePage->setClassifier((UMLClassifier*)m_pObject);
+    
+    if (m_pObject)
+      setWindowTitle(m_pObject->name());
 }
 
 QFrame* ClassPropDock::createPage(const QString& name, const QString& header, Icon_Utils::Icon_Type icon)

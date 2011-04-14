@@ -87,8 +87,10 @@ ClassifierListTab::~ClassifierListTab()
 void ClassifierListTab::setClassifier(UMLClassifier* classifier)
 {
   qDebug() << "In setClassifier"; //TODO ELV
-  m_pClassifier = classifier;
-  reloadItemListBox();
+  if (m_pClassifier != classifier) {
+    m_pClassifier = classifier;
+    reloadItemListBox();
+  }
 }
 
 /**
@@ -327,6 +329,7 @@ pGuiModel* ClassifierListTab::addRow()
         nameWidget->setFlags(Qt::ItemIsEditable|Qt::ItemIsEnabled);
         m_centralTableTW->setItem(m_rowCount,0,nameWidget);
         aRow->name = nameWidget;
+        //connect(nameWidget,SIGNAL(destroyed(QObject*)),aRow,SLOT(destroyTableItem(QObject*)));
         pGuiModel::linker[nameWidget] = aRow;
         
         KComboBox* typeCbb = new KComboBox(this);
@@ -338,6 +341,7 @@ pGuiModel* ClassifierListTab::addRow()
         inititalWidget->setFlags(Qt::ItemIsEditable|Qt::ItemIsEnabled);
         m_centralTableTW->setItem(m_rowCount,2,inititalWidget);
         aRow->initial = inititalWidget;
+        //connect(inititalWidget,SIGNAL(destroyed(QObject*)),aRow,SLOT(destroyTableItem(QObject*)));
         pGuiModel::linker[inititalWidget] = aRow;
         
         KComboBox* visibilityCbb = new KComboBox(this);
@@ -351,6 +355,7 @@ pGuiModel* ClassifierListTab::addRow()
         stereotypeWidget->setFlags(Qt::ItemIsEditable|Qt::ItemIsEnabled);
         m_centralTableTW->setItem(m_rowCount,4,stereotypeWidget);
         aRow->stereotype = stereotypeWidget;
+        //connect(stereotypeWidget,SIGNAL(destroyed(QObject*)),aRow,SLOT(destroyTableItem(QObject*)));
         pGuiModel::linker[stereotypeWidget] = aRow;
         
         QCheckBox* staticCb = new QCheckBox(this);
@@ -370,6 +375,7 @@ pGuiModel* ClassifierListTab::addRow()
         nameWidget->setFlags(Qt::ItemIsEditable|Qt::ItemIsEnabled);
         m_centralTableTW->setItem(m_rowCount,0,nameWidget);
         aRow->name = nameWidget;
+        //connect(nameWidget,SIGNAL(destroyed(QObject*)),aRow,SLOT(destroyTableItem(QObject*)));
         pGuiModel::linker[nameWidget] = aRow;
         
         QPushButton* paramPb = new QPushButton(this);
@@ -393,6 +399,7 @@ pGuiModel* ClassifierListTab::addRow()
         stereotypeWidget->setFlags(Qt::ItemIsEditable|Qt::ItemIsEnabled);
         m_centralTableTW->setItem(m_rowCount,4,stereotypeWidget);
         aRow->stereotype = stereotypeWidget;
+        //connect(stereotypeWidget,SIGNAL(destroyed(QObject*)),aRow,SLOT(destroyTableItem(QObject*)));
         pGuiModel::linker[stereotypeWidget] = aRow;
         
         QCheckBox* staticCb = new QCheckBox(this);
@@ -425,6 +432,7 @@ pGuiModel* ClassifierListTab::addRow()
         nameWidget->setFlags(Qt::ItemIsEditable|Qt::ItemIsEnabled);
         m_centralTableTW->setItem(m_rowCount,0,nameWidget);
         aRow->name = nameWidget;
+        //connect(nameWidget,SIGNAL(destroyed(QObject*)),aRow,SLOT(destroyTableItem(QObject*)));
         pGuiModel::linker[nameWidget] = aRow;
         
         KComboBox* typeCbb = new KComboBox(this);
@@ -436,6 +444,7 @@ pGuiModel* ClassifierListTab::addRow()
         stereotypeWidget->setFlags(Qt::ItemIsEditable|Qt::ItemIsEnabled);
         m_centralTableTW->setItem(m_rowCount,2,stereotypeWidget);
         aRow->stereotype = stereotypeWidget;
+        //connect(stereotypeWidget,SIGNAL(destroyed(QObject*)),aRow,SLOT(destroyTableItem(QObject*)));
         pGuiModel::linker[stereotypeWidget] = aRow;
         
       }
@@ -446,12 +455,14 @@ pGuiModel* ClassifierListTab::addRow()
         nameWidget->setFlags(Qt::ItemIsEditable|Qt::ItemIsEnabled);
         m_centralTableTW->setItem(m_rowCount,0,nameWidget);
         aRow->name = nameWidget;
+        //connect(nameWidget,SIGNAL(destroyed(QObject*)),aRow,SLOT(destroyTableItem(QObject*)));
         pGuiModel::linker[nameWidget] = aRow;
         
         QTableWidgetItem* valWidget = new QTableWidgetItem("");
         valWidget->setFlags(Qt::ItemIsEditable|Qt::ItemIsEnabled);
         m_centralTableTW->setItem(m_rowCount,1,valWidget);
         aRow->defaultValue = valWidget;
+        //connect(valWidget,SIGNAL(destroyed(QObject*)),aRow,SLOT(destroyTableItem(QObject*)));
         pGuiModel::linker[valWidget] = aRow;
         
       }
@@ -478,6 +489,7 @@ pGuiModel* ClassifierListTab::addRow()
     
     if (aRow) {
       aRow->connectSlots();
+      rowList << aRow;
     }
     
     return aRow;
@@ -490,9 +502,13 @@ void ClassifierListTab::reloadItemListBox()
     if (m_pClassifier) {
         UMLClassifierListItemList itemList(getItemList());
         // remove any items if present
+        foreach(pGuiModel* aRow,rowList) {
+          aRow->disconnectAndDelete();
+          delete aRow;
+        }
+        rowList.clear();
+        
         for (int i =m_centralTableTW->rowCount(); i >=0 ;i--) {
-          if (pGuiModel::linker[m_centralTableTW->itemAt(i,0)])
-            pGuiModel::linker[m_centralTableTW->itemAt(i,0)]->disconnectAndDelete();
           m_centralTableTW->removeRow(i);
         }
         m_rowCount = 0;
@@ -550,7 +566,7 @@ void ClassifierListTab::reloadItemListBox()
               connect( listItem, SIGNAL(modified()),this,SLOT(slotListItemModified()) );
             }
         }
-        //addEmtpyRow();
+        addEmtpyRow();
 
     }
 }

@@ -91,7 +91,9 @@ void pGuiModel::abstractChanged(int)
     m_pIsModified = true;
   }
   if (classifier && m_pIsReady) {
-    classifier->setAbstract(abstract->isChecked());
+    classifier->setAbstract(
+      abstract->isChecked()
+    );
   }
   qDebug() << "abstractChanged Changed";
 }
@@ -132,40 +134,6 @@ void pGuiModel::sourceChanged(bool)
   }
   qDebug() << "sourceChanged Changed";
 }
-
-/*aRow->setClassifier(classifier);
-              bool isStatic = ;
-              if (aRow->staticV)
-                
-              bool isAbstract = classifier->isAbstract();
-              if (aRow->abstract)
-                aRow->abstract->setChecked(isAbstract);
-              
-              //QPushButton* aRow->parameters;//TODO ELV
-                
-              if (aRow->type)
-                
-              
-              
-              if (aRow->visibility) {
-                
-              }
-              
-              if (aRow->constV)
-                
-                
-              if (aRow->source)
-                if (qobject_cast<UMLOperation*>(classifier))
-                  aRow->source->setToolTip(qobject_cast<UMLOperation*>(classifier)->getSourceCode());
-              
-              if (aRow->documentation)
-                aRow->documentation->setToolTip(classifier->doc());
-              
-              if (aRow->stereotype)
-                
-              
-              if (aRow->initial)
-                */
   
 void pGuiModel::cellChanged(QTableWidgetItem* item) 
 {
@@ -178,9 +146,7 @@ void pGuiModel::cellChanged(QTableWidgetItem* item)
       m_pIsModified = true;
     }
     if (classifier && m_pIsReady) {
-      m_pIsReady = false;
-      disconnect(classifier, SIGNAL(modified()),this,SLOT(reload()));
-      classifier->setName("jhdsfgjhsdgf"/*name->text()*/); 
+      classifier->setName(name->text()); 
     }
     qDebug() << "name Changed";
   }
@@ -226,7 +192,7 @@ void pGuiModel::reload()
     if (classifier) {
       if (name) {
         if (name->text() != classifier->name())
-          name->setText(classifier->name());
+          name->setText(classifier->name());//TODO ELV
       }
       if (staticV)
         staticV->setChecked(classifier->isStatic());
@@ -239,6 +205,7 @@ void pGuiModel::reload()
 void pGuiModel::disconnectAndDelete()
 {
   //TODO ELV
+  /*disconnect(classifier, SIGNAL(modified()),this,SLOT(reload()));
   disconnect(parameters, SIGNAL( clicked(bool) ), this, SLOT( parametersChanged(bool) ) );
   disconnect(type, SIGNAL( editTextChanged(QString) ), this, SLOT( typeChanged(QString) ) );
   disconnect(visibility, SIGNAL( currentIndexChanged(int) ), this, SLOT( visibilityChanged(int) ) );
@@ -246,8 +213,35 @@ void pGuiModel::disconnectAndDelete()
   disconnect(abstract, SIGNAL( stateChanged(int) ), this, SLOT( abstractChanged(int) ) );
   disconnect(constV, SIGNAL( stateChanged(int) ), this, SLOT( constVChanged(int) ) );
   disconnect(documentation, SIGNAL( clicked(bool) ), this, SLOT( documentationChanged(bool) ) );
-  disconnect(source, SIGNAL( clicked(bool) ), this, SLOT( sourceChanged(bool) ) );
+  disconnect(source, SIGNAL( clicked(bool) ), this, SLOT( sourceChanged(bool) ) );*/
+  disconnect(); //Everything else
 }
+
+/**
+ * Should never happen (none of the case), but if it does. at least dont segfault
+ */
+/*void pGuiModel::destroyTableItem(QObject *obj)
+{
+  if (obj == name) {
+    name = 0;
+    qDebug() << "name have been destroyed externally";
+  }
+  else if (obj == initial) {
+    initial = 0;
+    qDebug() << "initial have been destroyed externally";
+  }
+  else if (obj == defaultValue) {
+    defaultValue = 0;
+    qDebug() << "defaultValue have been destroyed externally";
+  }
+  else if (obj == stereotype) {
+    stereotype = 0;
+    qDebug() << "stereotype have been destroyed externally";
+  }
+  else {
+    qDebug() << "an unknow tableitem have been destroyed externally";
+  }
+}*/
 
 /**
  * Prevent a looping

@@ -92,6 +92,7 @@
 #include <QtGui/QPrinter>
 #include <QtGui/QPrintDialog>
 #include <QtGui/QUndoView>
+#include <QtGui/QSplitter>
 
 /** Static pointer, holding the last created instance. */
 UMLApp* UMLApp::s_instance;
@@ -639,6 +640,8 @@ void UMLApp::initStatusBar()
 {
     statusBar()->insertPermanentItem( i18nc("init status bar", "Ready"), 1 );
     connect(m_doc, SIGNAL( sigWriteToStatusBar(const QString &) ), this, SLOT( slotStatusMsg(const QString &) ));
+    m_pZoomSlider = new QSlider(this);
+    //statusBar()->insertPermanentWidget(new QSlider(m_pZoomSlider));
 }
 
 /**
@@ -658,8 +661,15 @@ void UMLApp::initView()
     m_newSessionButton = NULL;
     m_diagramMenu = NULL;
 
+    m_layout = new QVBoxLayout;
+    m_layout->setMargin(0);
+    
     // Prepare Stacked Diagram Representation
     m_viewStack = new QStackedWidget(this);
+    
+    QSplitter* aSplitterTest = new QSplitter(this);
+    //aSplitterTest->addWidget(new QPushButton(this,"test")); //TODO ELV
+    m_layout->addWidget(aSplitterTest);
 
     // Prepare Tabbed Diagram Representation
     m_tabWidget = new KTabWidget(this);
@@ -679,16 +689,14 @@ void UMLApp::initView()
     m_tabWidget->setCornerWidget( m_newSessionButton, Qt::TopLeftCorner );
     m_newSessionButton->installEventFilter(this);
 
-    m_layout = new QVBoxLayout;
-    m_layout->setMargin(0);
     if (Settings::getOptionState().generalState.tabdiagrams) {
         // Tabbed Diagram Representation
-        m_layout->addWidget(m_tabWidget);
+        aSplitterTest->addWidget(m_tabWidget);
         m_viewStack->hide();
     }
     else {
         // Stacked Diagram Representation
-        m_layout->addWidget(m_viewStack);
+        aSplitterTest->addWidget(m_viewStack);
         m_tabWidget->hide();
     }
 

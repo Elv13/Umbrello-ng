@@ -37,10 +37,13 @@ class pGuiModel : public QObject {
     void disconnectAndDelete();
     void setReady();
     
-   private:
+  private:
     bool m_pIsModified;
     bool m_pIsReady;
     UMLClassifierListItem* classifier;
+    
+  public slots:
+    //void destroyTableItem(QObject *obj);
        
   private slots:
       void parametersChanged(bool);

@@ -445,6 +445,8 @@ void UMLWidget::slotLineWidthChanged(Uml::IDType viewID)
 void UMLWidget::mouseDoubleClickEvent(QMouseEvent * me)
 {
     m_widgetController->mouseDoubleClickEvent(me);
+    DockManager::getClassPropDock()->setUMLWidget(this);
+    DockManager::getClassPropDock()->updatePages();
 }
 
 void UMLWidget::setUseFillColour(bool fc)
@@ -650,9 +652,6 @@ void UMLWidget::showProperties()
     //QPointer<ClassPropDock> dlg = new ClassPropDock((QWidget*)UMLApp::app(), this);
     QPointer<ClassPropDlg> dlg = new ClassPropDlg((QWidget*)UMLApp::app(), this);
 
-    qDebug() << "In showProperties()"; //TODO ELV
-    DockManager::getClassPropDock()->setUMLWidget(this);
-    DockManager::getClassPropDock()->updatePages();
     if (dlg->exec()) {
         docwindow->showDocumentation(umlObject() , true);
         m_pDoc->setModified(true);

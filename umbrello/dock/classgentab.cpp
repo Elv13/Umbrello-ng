@@ -45,16 +45,59 @@
 #include <QtGui/QGridLayout>
 
 ClassGenTab::ClassGenTab(UMLDoc* d, QWidget* parent, UMLObject* o)
-  : QWidget(parent), m_pObject(o), m_pWidget(0), m_pInstanceWidget(0), m_pUmldoc(d)
+  : QWidget(parent), m_pObject(o), m_pWidget(0), m_pInstanceWidget(0), m_pUmldoc(d), m_Type(pt_Unset),
+    m_pDocGB (0),m_pInfGB(0), m_pNameL (0), m_pInstanceL (0), m_pStereoTypeL (0), m_pPackageL (0), m_pVisibilityL (0), m_pClassNameLE (0), 
+    m_pInstanceLE (0), m_pPackageLE (0), m_pStereoTypeCB (0), m_pPackageCB (0), m_pVisibility (0), m_pMultiCB (0), m_pDrawActorCB (0), 
+    m_pAbstractCB (0), m_pDeconCB (0), m_pDoc (0), m_pDrawAsGB (0), m_pDefaultRB (0), m_pFileRB (0), m_pLibraryRB (0), m_pTableRB (0), 
+    m_pExecutableCB (0)
 {
+    m_pUmldoc = UMLApp::app()->document();
+
+    setObject(o);
+
+}
+
+ClassGenTab::ClassGenTab(UMLDoc* d, QWidget* parent, ObjectWidget* o)
+  : QWidget(parent), m_pObject(0), m_pWidget(o), m_pInstanceWidget(0), m_pUmldoc(d), m_Type(pt_Unset),
+    m_pDocGB (0),m_pInfGB(0), m_pNameL (0), m_pInstanceL (0), m_pStereoTypeL (0), m_pPackageL (0), m_pVisibilityL (0), m_pClassNameLE (0), 
+    m_pInstanceLE (0), m_pPackageLE (0), m_pStereoTypeCB (0), m_pPackageCB (0), m_pVisibility (0), m_pMultiCB (0), m_pDrawActorCB (0), 
+    m_pAbstractCB (0), m_pDeconCB (0), m_pDoc (0), m_pDrawAsGB (0), m_pDefaultRB (0), m_pFileRB (0), m_pLibraryRB (0), m_pTableRB (0), 
+    m_pExecutableCB (0)
+{
+    m_pUmldoc = UMLApp::app()->document();
+    
+
+    setObjectWidget(o);
+}
+
+ClassGenTab::ClassGenTab(UMLDoc* d, QWidget* parent, UMLWidget* widget)
+    : QWidget(parent), m_pObject(0), m_pWidget(0), m_pInstanceWidget(widget), m_pUmldoc(d), m_Type(pt_Unset),
+    m_pDocGB (0),m_pInfGB(0), m_pNameL (0), m_pInstanceL (0), m_pStereoTypeL (0), m_pPackageL (0), m_pVisibilityL (0), m_pClassNameLE (0), 
+    m_pInstanceLE (0), m_pPackageLE (0), m_pStereoTypeCB (0), m_pPackageCB (0), m_pVisibility (0), m_pMultiCB (0), m_pDrawActorCB (0), 
+    m_pAbstractCB (0), m_pDeconCB (0), m_pDoc (0), m_pDrawAsGB (0), m_pDefaultRB (0), m_pFileRB (0), m_pLibraryRB (0), m_pTableRB (0), 
+    m_pExecutableCB (0)
+{
+    m_pUmldoc = UMLApp::app()->document();
+    
+    
+
+    setUMLWidget(widget);
+}
+
+ClassGenTab::~ClassGenTab()
+{
+}
+
+void ClassGenTab::setObject(UMLObject * o)
+{
+  if (m_Type != pt_Object) {
+    resetTab();
     int margin = fontMetrics().height();
 
-    setMinimumSize(310,330);
     QHBoxLayout * topLayout = new QHBoxLayout(this);
     topLayout->setSpacing(6);
     
-    QFormLayout * formLayout = new QFormLayout(this);
-    topLayout->addItem(formLayout);
+
 
     // setup name
     QString name;
@@ -101,16 +144,18 @@ ClassGenTab::ClassGenTab(UMLDoc* d, QWidget* parent, UMLObject* o)
         name = i18n("Class &name:");
         uWarning() << "creating class gen page for unknown widget type";
         break;
-    }
-    QGridLayout * m_pNameLayout = new QGridLayout();
-    m_pNameLayout->setSpacing(6);
-    topLayout->addLayout(m_pNameLayout, 4);
+    }    
+    
+    m_pInfGB = new QGroupBox(this);
+    m_pInfGB->setTitle(i18n("General informations"));
+    topLayout->addWidget(m_pInfGB);
+    
+    QFormLayout * formLayout = new QFormLayout(m_pInfGB);
+    
     m_pNameL = new QLabel(this);
     m_pNameL->setText(name);
-    //m_pNameLayout->addWidget(m_pNameL, 0, 0);
 
     m_pClassNameLE = new KLineEdit(this);
-    //m_pNameLayout->addWidget(m_pClassNameLE, 0, 1);
     m_pClassNameLE->setFocus();
     m_pNameL->setBuddy(m_pClassNameLE);
     formLayout->addRow(m_pNameL,m_pClassNameLE);
@@ -121,10 +166,8 @@ ClassGenTab::ClassGenTab(UMLDoc* d, QWidget* parent, UMLObject* o)
     m_pDeconCB = 0;
 
     m_pStereoTypeL = new QLabel(i18n("&Stereotype name:"), this);
-   // m_pNameLayout->addWidget(m_pStereoTypeL, 1, 0);
 
     m_pStereoTypeCB = new KComboBox(true, this);
-    //m_pNameLayout->addWidget(m_pStereoTypeCB, 1, 1);
     formLayout->addRow(m_pStereoTypeL,m_pStereoTypeCB);
 
     //m_pStereoTypeCB->setItemText( m_pStereoTypeCB->currentIndex(), o->stereotype() ); //TODO ELV
@@ -170,13 +213,11 @@ ClassGenTab::ClassGenTab(UMLDoc* d, QWidget* parent, UMLObject* o)
         }
         m_pAbstractCB = new QCheckBox( abstractCaption, this );
         m_pAbstractCB->setChecked( o->isAbstract() );
-        m_pNameLayout->addWidget( m_pAbstractCB, 3, 0 );
     }
 
     if (t == Uml::ot_Component) {
         m_pExecutableCB = new QCheckBox(i18nc("component is executable", "&Executable"), this);
         m_pExecutableCB->setChecked( (static_cast<UMLComponent*>(o))->getExecutable() );
-        m_pNameLayout->addWidget( m_pExecutableCB, 3, 0 );
     }
 
     if (t == Uml::ot_Artifact) {
@@ -243,27 +284,15 @@ ClassGenTab::ClassGenTab(UMLDoc* d, QWidget* parent, UMLObject* o)
     // setup documentation
     m_pDocGB = new QGroupBox(this);
     QHBoxLayout * docLayout = new QHBoxLayout(m_pDocGB);
-    docLayout->setMargin(margin);
     m_pDocGB->setTitle(i18n("Documentation"));
+    
+
 
     m_pDoc = new KTextEdit(m_pDocGB);
     docLayout->addWidget(m_pDoc);
     topLayout->addWidget(m_pDocGB);
 
-    // setup fields
-    //m_pClassNameLE->setText(o->name()); //TODO ELV
-    //m_pDoc->setText(o->doc());//TODO ELV
-    if (o) { //TODO ELV PORT TO FUNCTION
-      Uml::Visibility s = o->visibility();
-      if (s == Uml::Visibility::Public)
-          m_pVisibility->setCurrentIndex(ClassGenTab::Public);
-      else if (s == Uml::Visibility::Private)
-          m_pVisibility->setCurrentIndex(ClassGenTab::Private);
-      else if (s == Uml::Visibility::Protected)
-            m_pVisibility->setCurrentIndex(ClassGenTab::Protected);
-      else
-          m_pVisibility->setCurrentIndex(ClassGenTab::Implementation);
-    }
+    
 
     // manage stereotypes
     m_pStereoTypeCB->setDuplicatesEnabled(false);  // only allow one of each type in box
@@ -272,17 +301,37 @@ ClassGenTab::ClassGenTab(UMLDoc* d, QWidget* parent, UMLObject* o)
       insertStereotypesSorted(m_pObject->stereotype());
 
     m_pDoc->setLineWrapMode(QTextEdit::WidgetWidth);
+  }
+  m_Type = pt_Object;
+  m_pObject = o;
+  
+  if (o) {
+    m_pClassNameLE->setText(o->name());
+    
+    if (o->visibility() == Uml::Visibility::Implementation)
+      m_pVisibility->setCurrentIndex(3); //TODO ELV find why only Uml::Visibility::FromParent -need- to be "3"
+    else if (o->visibility() == Uml::Visibility::Public)
+      m_pVisibility->setCurrentIndex(Uml::Visibility::Public);
+    else if (o->visibility() == Uml::Visibility::Private)
+      m_pVisibility->setCurrentIndex(Uml::Visibility::Private);
+    else if (o->visibility() == Uml::Visibility::Protected)
+      m_pVisibility->setCurrentIndex(Uml::Visibility::Protected);
+    
+    m_pStereoTypeCB->lineEdit()->setText(o->stereotype());
+    
+    m_pPackageCB->lineEdit()->setText(o->package()); //TODO ELV connect everything
+    
+    // setup fields
+    m_pDoc->setText(o->doc());//TODO ELV
+  }
 }
 
-ClassGenTab::ClassGenTab(UMLDoc* d, QWidget* parent, ObjectWidget* o)
-  : QWidget(parent), m_pObject(0), m_pWidget(o), m_pInstanceWidget(0), m_pUmldoc(d)
+void ClassGenTab::setObjectWidget(ObjectWidget *o)
 {
-    m_pDeconCB = 0;
-    m_pMultiCB = 0;
-
+  if (m_Type != pt_ObjectWidget) {
+    resetTab();
     int margin = fontMetrics().height();
 
-    setMinimumSize(310,330);
     QGridLayout * topLayout = new QGridLayout(this);
     topLayout->setSpacing(6);
 
@@ -336,17 +385,18 @@ ClassGenTab::ClassGenTab(UMLDoc* d, QWidget* parent, ObjectWidget* o)
     if (m_pMultiCB) {
         connect( m_pDrawActorCB, SIGNAL( toggled( bool ) ), this, SLOT( slotActorToggled( bool ) ) );
     }
+  }
+  m_Type = pt_ObjectWidget;
+  m_pWidget = o;
+  m_pObject = o->umlObject();
 }
 
-ClassGenTab::ClassGenTab(UMLDoc* d, QWidget* parent, UMLWidget* widget)
-    : QWidget(parent), m_pObject(0), m_pWidget(0), m_pInstanceWidget(widget), m_pUmldoc(d)
+void ClassGenTab::setUMLWidget(UMLWidget *w)
 {
-    m_pDeconCB = 0;
-    m_pMultiCB = 0;
-
+  if (m_Type != pt_Widget) {
+    resetTab();
     int margin = fontMetrics().height();
 
-    setMinimumSize(310,330);
     QGridLayout* topLayout = new QGridLayout(this);
     topLayout->setSpacing(6);
 
@@ -355,9 +405,9 @@ ClassGenTab::ClassGenTab(UMLDoc* d, QWidget* parent, UMLWidget* widget)
     m_pNameLayout->setSpacing(6);
     topLayout->addLayout(m_pNameLayout, 3, 2);
     m_pNameL = new QLabel(this);
-    if (widget->baseType() == Uml::wt_Component) {
+    if (w->baseType() == Uml::wt_Component) {
         m_pNameL->setText(i18n("Component name:"));
-    } else if (widget->baseType() == Uml::wt_Node) {
+    } else if (w->baseType() == Uml::wt_Node) {
         m_pNameL->setText(i18n("Node name:"));
     } else {
         uWarning() << "ClassGenTab called on unknown widget type";
@@ -365,7 +415,7 @@ ClassGenTab::ClassGenTab(UMLDoc* d, QWidget* parent, UMLWidget* widget)
     m_pNameLayout->addWidget(m_pNameL, 0, 0);
 
     m_pClassNameLE = new KLineEdit(this);
-    m_pClassNameLE->setText(widget->name());
+    m_pClassNameLE->setText(w->name());
     m_pNameLayout->addWidget(m_pClassNameLE, 0, 1);
 
     m_pStereoTypeL = new QLabel(i18n("Stereotype name:"), this);
@@ -374,15 +424,14 @@ ClassGenTab::ClassGenTab(UMLDoc* d, QWidget* parent, UMLWidget* widget)
     m_pStereoTypeCB = new KComboBox(true, this);
     m_pNameLayout->addWidget(m_pStereoTypeCB, 1, 1);
 
-    m_pStereoTypeCB->setItemText( m_pStereoTypeCB->currentIndex(), widget->umlObject()->stereotype() );
-    m_pStereoTypeCB->setCompletionMode( KGlobalSettings::CompletionPopup );
+    
 
     m_pInstanceL = new QLabel(this);
     m_pInstanceL->setText(i18n("Instance name:"));
     m_pNameLayout->addWidget(m_pInstanceL, 2, 0);
 
     m_pInstanceLE = new KLineEdit(this);
-    m_pInstanceLE->setText(widget->instanceName());
+    m_pInstanceLE->setText(w->instanceName());
     m_pNameLayout->addWidget(m_pInstanceLE, 2, 1);
 
     //setup documentation
@@ -394,12 +443,118 @@ ClassGenTab::ClassGenTab(UMLDoc* d, QWidget* parent, UMLWidget* widget)
 
     m_pDoc = new KTextEdit(m_pDocGB);
     m_pDoc->setLineWrapMode(QTextEdit::WidgetWidth);
-    m_pDoc->setText(widget->documentation());
+    m_pDoc->setText(w->documentation());
     docLayout->addWidget(m_pDoc);
+  }
+  m_Type = pt_Widget;
+  m_pInstanceWidget = w;
+  
+  if (w) {
+    m_pStereoTypeCB->setItemText( m_pStereoTypeCB->currentIndex(), w->umlObject()->stereotype() );
+    m_pStereoTypeCB->setCompletionMode( KGlobalSettings::CompletionPopup );
+  }
 }
 
-ClassGenTab::~ClassGenTab()
+void ClassGenTab::resetTab() 
 {
+  
+  if (m_pDocGB) {
+    delete m_pDocGB;
+  }
+  if (m_pInfGB) {
+    delete m_pInfGB;
+  }
+  if (m_pNameL) {
+    delete m_pNameL;
+  }
+  if (m_pInstanceL) {
+    delete m_pInstanceL;
+  }
+  if (m_pStereoTypeL) {
+    delete m_pStereoTypeL;
+  }
+  if (m_pPackageL) {
+    delete m_pPackageL;
+  }
+  if (m_pVisibilityL) {
+    delete m_pVisibilityL;
+  }
+  if (m_pClassNameLE) {
+    delete m_pClassNameLE;
+  }
+  if (m_pInstanceLE) {
+    delete m_pInstanceLE;
+  }
+  if (m_pPackageLE) {
+    delete m_pPackageLE;
+  }
+  if (m_pStereoTypeCB) {
+    delete m_pStereoTypeCB;
+  }
+  if (m_pPackageCB) {
+    delete m_pPackageCB;
+  }
+  if (m_pVisibility) {
+    delete m_pVisibility;
+  }
+  if (m_pMultiCB) {
+    delete m_pMultiCB;
+  }
+  if (m_pDrawActorCB) {
+    delete m_pDrawActorCB;
+  }
+  if (m_pAbstractCB) {
+    delete m_pAbstractCB;
+  }
+  if (m_pDeconCB) {
+    delete m_pDeconCB;
+  }
+  if (m_pDoc) {
+    delete m_pDoc;
+  }
+  if (m_pDrawAsGB) {
+    delete m_pDrawAsGB;
+  }
+  if (m_pDefaultRB) {
+    delete m_pDefaultRB;
+  }
+  if (m_pFileRB) {
+    delete m_pFileRB;
+  }
+  if (m_pLibraryRB) {
+    delete m_pLibraryRB;
+  }
+  if (m_pTableRB) {
+    delete m_pTableRB;
+  }
+  if (m_pExecutableCB) {
+    delete m_pExecutableCB;
+  }
+  
+  m_pDocGB = 0;
+  m_pInfGB = 0;
+  m_pNameL = 0;
+  m_pInstanceL = 0;
+  m_pStereoTypeL = 0;
+  m_pPackageL = 0;
+  m_pVisibilityL = 0;
+  m_pClassNameLE = 0;
+  m_pInstanceLE = 0;
+  m_pPackageLE = 0;
+  m_pStereoTypeCB = 0;
+  m_pPackageCB = 0;
+  m_pVisibility = 0;
+  m_pMultiCB = 0;
+  m_pDrawActorCB = 0;
+  m_pAbstractCB = 0;
+  m_pDeconCB = 0;
+  m_pDoc = 0;
+  m_pDrawAsGB = 0;
+  m_pDefaultRB = 0;
+  m_pFileRB = 0;
+  m_pLibraryRB = 0;
+  m_pTableRB = 0;
+  m_pExecutableCB = 0;
 }
 
 void ClassGenTab::insertStereotypesSorted(const QString& type)

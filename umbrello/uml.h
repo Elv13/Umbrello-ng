@@ -55,6 +55,7 @@ class QMenu;
 class QMimeData;
 class QUndoCommand;
 class QUndoView;
+class QSLider;
 
 /**
  * The base class for UML application windows. It sets up the main
@@ -401,6 +402,8 @@ private:
     XhtmlGenerator* m_xhtmlGenerator;
 
     KUndoStack* m_pUndoStack;  ///< UndoStack used to store actions, to provide Undo/Redo feature.
+    
+    QSlider* m_pZoomSlider;
 
     bool m_hasBegunMacro;  ///< Macro creation flag.
 

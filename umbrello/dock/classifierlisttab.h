@@ -97,6 +97,8 @@ private:
     UMLClassifierListItem* m_pOldListItem;
     
     uint m_rowCount;
+    
+    QList<pGuiModel*> rowList;
 
 protected:
 

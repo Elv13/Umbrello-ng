@@ -71,11 +71,15 @@ public:
      * Standard deconstructor.
      */
     ~ClassGenTab();
+    
+    void setObject(UMLObject * o);
+    void setObjectWidget(ObjectWidget *o);
+    void setUMLWidget(UMLWidget *w);
 
     void updateObject();
 
 private:
-  enum Visibility {
+  enum Visibility { //TODO ELV remove
       Public,
       Private,
       Protected,
@@ -86,7 +90,7 @@ private:
     UMLWidget * m_pInstanceWidget;
     UMLDoc * m_pUmldoc;
 
-    QGroupBox * m_pDocGB;
+    QGroupBox * m_pDocGB, * m_pInfGB;
     QLabel * m_pNameL, * m_pInstanceL, * m_pStereoTypeL, * m_pPackageL, * m_pVisibilityL;
     KLineEdit * m_pClassNameLE, * m_pInstanceLE, * m_pPackageLE;
     KComboBox * m_pStereoTypeCB, * m_pPackageCB, * m_pVisibility;
@@ -97,6 +101,16 @@ private:
     QCheckBox * m_pExecutableCB;
 
     void insertStereotypesSorted(const QString& type);
+    void resetTab();
+    
+    enum Page_Type {
+        pt_Unset = 1, //Not selected yet
+        pt_Object,    // Show General page + Assoc. page if Class i.e. no colours page
+        pt_ObjectWidget,  // Shows pages needed for an ObjectWidget
+        pt_Widget         // Shows pages needed for any other widget
+    };
+    
+    Page_Type m_Type;
 
 public slots:
 
