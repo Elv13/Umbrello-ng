@@ -24,6 +24,7 @@
 #include "cmdlineexportallviewsevent.h"
 #include "cmds.h"
 #include "umbrellosettings.h"
+#include "statusbartoolbutton.h"
 // code generation
 #include "codegenerator.h"
 #include "codegenerationpolicy.h"
@@ -132,6 +133,7 @@ UMLApp::UMLApp(QWidget* parent) : KXmlGuiWindow(parent)
     m_policyext  = 0;
     m_commoncodegenpolicy = 0;
     m_xhtmlGenerator = 0;
+    m_activeView = 0;
     m_activeLanguage = Uml::pl_Reserved;
     m_pUndoStack = new KUndoStack(this);
     m_doc = new UMLDoc();
@@ -570,6 +572,22 @@ void UMLApp::setZoom(int zoom)
 }
 
 /**
+ * Decrease the zoom factor of the current diagram.
+ */
+void UMLApp::slotZoomOut()
+{
+    currentView()->setZoom(currentView()->getZoom()-5);
+}
+
+/**
+ * Increase the zoom factor of the current diagram.
+ */
+void UMLApp::slotZoomIn()
+{
+    currentView()->setZoom(currentView()->getZoom()+5);
+}
+
+/**
  * Set the zoom factor of the current diagram.
  *
  * @param action  Action which is called.
@@ -638,10 +656,53 @@ void UMLApp::setupZoomMenu()
  */
 void UMLApp::initStatusBar()
 {
-    statusBar()->insertPermanentItem( i18nc("init status bar", "Ready"), 1 );
-    connect(m_doc, SIGNAL( sigWriteToStatusBar(const QString &) ), this, SLOT( slotStatusMsg(const QString &) ));
-    m_pZoomSlider = new QSlider(this);
-    //statusBar()->insertPermanentWidget(new QSlider(m_pZoomSlider));
+    statusBar()->insertItem( i18nc("init status bar", "Ready"), 1, 1000000 );
+    connect(m_doc, SIGNAL( sigWriteToStatusBar(const QString &) ), this, SLOT( slotStatusMsg(const QString &) ));    
+    
+    QWidget* defaultZoomWdg = new QWidget(this);
+    QHBoxLayout* zoomLayout = new QHBoxLayout(defaultZoomWdg);
+    zoomLayout->setContentsMargins(0,0,0,0);
+    zoomLayout->setSpacing(0);
+    
+    StatusBarToolButton* zoomFitTB = new StatusBarToolButton(this);
+    zoomFitTB->setText("Fit");
+    zoomFitTB->setGroupPosition(StatusBarToolButton::GroupLeft);
+    zoomLayout->addWidget(zoomFitTB);
+    zoomFitTB->setContentsMargins(0,0,0,0);
+    
+    StatusBarToolButton* zoomFullTB = new StatusBarToolButton(this);
+    zoomFullTB->setText("100%");
+    zoomFullTB->setGroupPosition(StatusBarToolButton::GroupRight);
+    zoomFullTB->setContentsMargins(0,0,0,0);
+    zoomLayout->addWidget(zoomFullTB);
+    connect(zoomFullTB, SIGNAL( triggered( bool ) ), this, SLOT( slotZoom100() ));
+    
+    statusBar()->addPermanentWidget(defaultZoomWdg);
+    
+    QPushButton* zoomOutTB = new QPushButton(this);
+    zoomOutTB->setIcon(KIcon("zoom-out"));
+    zoomOutTB->setFlat(true);
+    zoomOutTB->setMaximumSize(30,30);
+    statusBar()->addPermanentWidget(zoomOutTB);
+    connect(zoomOutTB, SIGNAL( clicked() ), this, SLOT( slotZoomOut() ));
+    
+    m_pZoomSlider = new QSlider(Qt::Horizontal, this);
+    m_pZoomSlider->setMaximumSize(100,50);
+    m_pZoomSlider->setMinimum(300);
+    m_pZoomSlider->setMaximum(6000);
+    m_pZoomSlider->setValue(1000);
+    m_pZoomSlider->setContentsMargins(0,0,0,0);
+    connect(m_pZoomSlider, SIGNAL( valueChanged( int ) ), this, SLOT( slotZoomSliderMoved(int) ));
+    
+    statusBar()->addPermanentWidget(m_pZoomSlider);
+    
+    QPushButton* zoomInTB = new QPushButton(this);
+    zoomInTB->setIcon(KIcon("zoom-in"));
+    zoomInTB->setFlat(true);
+    zoomInTB->setMaximumSize(30,30);
+    statusBar()->addPermanentWidget(zoomInTB);
+    connect(zoomInTB, SIGNAL( clicked() ), this, SLOT( slotZoomIn() )); //TODO ELV add to .h
+
 }
 
 /**
@@ -654,11 +715,7 @@ void UMLApp::initView()
     m_view = NULL;
     m_toolsbar = new WorkToolBar(this);
     m_toolsbar->setWindowTitle(i18n("Diagram Toolbar"));
-    addToolBar(Qt::TopToolBarArea, m_toolsbar);
-
-//     m_mainDock = new QDockWidget( this );
-//     addDockWidget ( Qt::RightDockWidgetArea, m_mainDock );
-    m_newSessionButton = NULL;
+    addToolBar(Qt::LeftToolBarArea, m_toolsbar);
     m_diagramMenu = NULL;
 
     m_layout = new QVBoxLayout;
@@ -667,37 +724,18 @@ void UMLApp::initView()
     // Prepare Stacked Diagram Representation
     m_viewStack = new QStackedWidget(this);
     
-    QSplitter* aSplitterTest = new QSplitter(this);
-    //aSplitterTest->addWidget(new QPushButton(this,"test")); //TODO ELV
-    m_layout->addWidget(aSplitterTest);
+    m_mainSplitter = new QSplitter(this);
+    //m_mainSplitter->addWidget(new QPushButton(this,"test")); //TODO ELV
+    m_layout->addWidget(m_mainSplitter);
 
     // Prepare Tabbed Diagram Representation
-    m_tabWidget = new KTabWidget(this);
-    m_tabWidget->setAutomaticResizeTabs(true);
-    m_tabWidget->setTabsClosable(true);
-    connect(m_tabWidget, SIGNAL(closeRequest(QWidget*)), SLOT(slotCloseDiagram(QWidget*)));
+    splitView();//TODO ELV complete
+    splitView();//TODO ELV complete
 
-    m_newSessionButton = new QToolButton(m_tabWidget);
-    m_newSessionButton->setIcon(Icon_Utils::SmallIcon(Icon_Utils::it_Tab_New));
-    m_newSessionButton->adjustSize();
-    m_newSessionButton->setAutoRaise(true);
-    m_newSessionButton->setPopupMode(QToolButton::InstantPopup);
-    m_newSessionButton->setMenu(newDiagram->menu());
-
-    connect(m_tabWidget, SIGNAL(currentChanged(QWidget*)), SLOT(slotTabChanged(QWidget*)));
-    connect(m_tabWidget, SIGNAL(contextMenu(QWidget*,const QPoint&)), m_doc, SLOT(slotDiagramPopupMenu(QWidget*,const QPoint&)));
-    m_tabWidget->setCornerWidget( m_newSessionButton, Qt::TopLeftCorner );
-    m_newSessionButton->installEventFilter(this);
-
-    if (Settings::getOptionState().generalState.tabdiagrams) {
-        // Tabbed Diagram Representation
-        aSplitterTest->addWidget(m_tabWidget);
-        m_viewStack->hide();
-    }
-    else {
+    if (!Settings::getOptionState().generalState.tabdiagrams) {
         // Stacked Diagram Representation
-        aSplitterTest->addWidget(m_viewStack);
-        m_tabWidget->hide();
+        m_mainSplitter->addWidget(m_viewStack);
+        //m_tabWidget->hide(); //TODO ELV
     }
 
     QWidget *widget = new QWidget;
@@ -1636,12 +1674,12 @@ void UMLApp::slotApplyPrefs()
     if (m_dlg) {
         // we need this to sync both values
         Settings::OptionState& optionState = Settings::getOptionState();
-        bool stackBrowsing = (m_layout->indexOf(m_tabWidget) != -1);
+        bool stackBrowsing = (m_layout->indexOf(m_tabWidgets[0]) != -1);
         bool tabBrowsing = optionState.generalState.tabdiagrams;
         DEBUG(DBG_SRC) << "stackBrowsing=" << stackBrowsing << " / tabBrowsing=" << tabBrowsing;
 
         if (stackBrowsing != tabBrowsing) {
-            // Diagram Representation Modified
+            /*// Diagram Representation Modified
             UMLView* currentView;
             UMLViewList views = m_doc->viewIterator();
 
@@ -1660,18 +1698,18 @@ void UMLApp::slotApplyPrefs()
                 m_tabWidget->show();
             }
             else {  // stackBrowsing
-                currentView = static_cast<UMLView*>(m_tabWidget->currentWidget());
-                m_layout->removeWidget(m_tabWidget);
-                m_tabWidget->hide();
+                currentView = static_cast<UMLView*>(m_tabWidgets[0]->currentWidget()); //TODO ELV port
+                m_layout->removeWidget(m_tabWidgets[0]); //TODO ELV port
+                //m_tabWidget->hide(); //TODO ELV
 
                 foreach (UMLView *view, views) {
-                    m_tabWidget->removeTab(m_tabWidget->indexOf(view));
+                    //m_tabWidget->removeTab(m_tabWidget->indexOf(view)); TODO ELV
                     m_viewStack->addWidget(view);
                 }
                 m_layout->addWidget(m_viewStack);
                 m_viewStack->show();
             }
-            setCurrentView(currentView);
+            setCurrentView(currentView);*///TODO ELV
         }
 
         m_doc->settingsChanged( optionState );
@@ -2396,7 +2434,9 @@ void UMLApp::slotCloseDiagram(QWidget* tab)
         if (view != currentView()) {
             setCurrentView(view);
         }
-        m_tabWidget->removeTab(m_tabWidget->indexOf(view));
+        foreach (KTabWidget* tabWidget, m_tabWidgets) {
+          tabWidget->removeTab(tabWidget->indexOf(view)); //TODO ELV That cant work
+        }
         view->setIsOpen(false);
     }
 }
@@ -2560,7 +2600,7 @@ QWidget* UMLApp::mainViewWidget()
 {
     Settings::OptionState& optionState = Settings::getOptionState();
     if ( optionState.generalState.tabdiagrams ) {
-        return m_tabWidget;
+        return m_tabWidgets[0]; //TODO add a system to know the last active view
     }
     else {
         return m_viewStack;
@@ -2584,13 +2624,13 @@ void UMLApp::setCurrentView(UMLView* view)
 
     Settings::OptionState optionState = Settings::getOptionState();
     if (optionState.generalState.tabdiagrams) {
-        int tabIndex = m_tabWidget->indexOf(view);
+        int tabIndex = m_tabWidgets[0]->indexOf(view);
         if ((tabIndex < 0) && view->isOpen()) {
-            tabIndex = m_tabWidget->addTab(view, view->getName());
-            m_tabWidget->setTabIcon(tabIndex, Icon_Utils::iconSet(view->getType()));
-            m_tabWidget->setTabToolTip(tabIndex, view->getName());
+            tabIndex = m_tabWidgets[0]->addTab(view, view->getName());
+            m_tabWidgets[0]->setTabIcon(tabIndex, Icon_Utils::iconSet(view->getType()));
+            m_tabWidgets[0]->setTabToolTip(tabIndex, view->getName());
         }
-        m_tabWidget->setCurrentIndex(tabIndex);
+        m_tabWidgets[0]->setCurrentIndex(tabIndex);
     }
     else {
         if (m_viewStack->indexOf(view) < 0) {
@@ -2645,9 +2685,12 @@ QString UMLApp::imageMimeType() const
  */
 void UMLApp::slotTabChanged(QWidget* tab)
 {
-    UMLView* view = ( UMLView* )tab;
+    UMLView* view = qobject_cast<UMLView*>(tab);
     if (view) {
         m_doc->changeCurrentView( view->getID() );
+    }
+    else {
+      m_toolsbar->setDisabled(true);
     }
 }
 
@@ -2657,8 +2700,8 @@ void UMLApp::slotTabChanged(QWidget* tab)
 void UMLApp::slotChangeTabLeft()
 {
     //DEBUG(DBG_SRC) << "currentIndex = " << m_tabWidget->currentIndex() << " of " << m_tabWidget->count();
-    if (m_tabWidget) {
-        m_tabWidget->setCurrentIndex( m_tabWidget->currentIndex() - 1 );
+    if (m_tabWidgets[m_activeView]) {
+        m_tabWidgets[m_activeView]->setCurrentIndex( m_tabWidgets[m_activeView]->currentIndex() - 1 );
         return;
     }
     UMLViewList views = m_doc->viewIterator();
@@ -2687,8 +2730,8 @@ void UMLApp::slotChangeTabLeft()
 void UMLApp::slotChangeTabRight()
 {
     //DEBUG(DBG_SRC) << "currentIndex = " << m_tabWidget->currentIndex() << " of " << m_tabWidget->count();
-    if (m_tabWidget) {
-        m_tabWidget->setCurrentIndex( m_tabWidget->currentIndex() + 1 );
+    if (m_tabWidgets[m_activeView]) {
+        m_tabWidgets[m_activeView]->setCurrentIndex( m_tabWidgets[m_activeView]->currentIndex() + 1 );
         return;
     }
     UMLViewList views = m_doc->viewIterator();
@@ -2729,15 +2772,15 @@ void UMLApp::slotMoveTabLeft()
 {
     //DEBUG(DBG_SRC) << "currentIndex = " << m_tabWidget->currentIndex() << " of " << m_tabWidget->count();
     //showTabTexts(m_tabWidget);
-    int from = m_tabWidget->currentIndex();
+    int from = m_tabWidgets[m_activeView]->currentIndex();
     int to   = -1;
     if (from > 0) {
         to = from - 1;
     }
     else {
-        to = m_tabWidget->count() - 1;
+        to = m_tabWidgets[m_activeView]->count() - 1;
     }
-    m_tabWidget->moveTab(from, to);
+    m_tabWidgets[m_activeView]->moveTab(from, to);
 }
 
 /**
@@ -2747,15 +2790,15 @@ void UMLApp::slotMoveTabRight()
 {
     //DEBUG(DBG_SRC) << "currentIndex = " << m_tabWidget->currentIndex() << " of " << m_tabWidget->count();
     //showTabTexts(m_tabWidget);
-    int from = m_tabWidget->currentIndex();
+    int from = m_tabWidgets[m_activeView]->currentIndex();
     int to   = -1;
-    if (from < m_tabWidget->count() - 1) {
+    if (from < m_tabWidgets[m_activeView]->count() - 1) {
         to = from + 1;
     }
     else {
         to = 0;
     }
-    m_tabWidget->moveTab(from, to);
+    m_tabWidgets[m_activeView]->moveTab(from, to);
 }
 
 /**
@@ -2776,9 +2819,9 @@ void UMLApp::slotXhtmlDocGenerationFinished(bool status)
 /**
  * Return the tab widget.
  */
-KTabWidget* UMLApp::tabWidget()
+QList<KTabWidget*> UMLApp::tabWidgets()
 {
-    return m_tabWidget;
+    return m_tabWidgets;
 }
 
 /**
@@ -2871,6 +2914,38 @@ void UMLApp::endMacro()
         m_pUndoStack->endMacro();
     }
     m_hasBegunMacro = false;
+}
+
+/**
+ * Split the mainview in half
+ */
+void UMLApp::splitView()
+{
+    KTabWidget* tabWidget = new KTabWidget(this);
+    tabWidget->setAutomaticResizeTabs(true);
+    tabWidget->setTabsClosable(true);
+    connect(tabWidget, SIGNAL(closeRequest(QWidget*)), SLOT(slotCloseDiagram(QWidget*)));
+
+    QToolButton* newSessionButton = new QToolButton(tabWidget);
+    newSessionButton->setIcon(Icon_Utils::SmallIcon(Icon_Utils::it_Tab_New));
+    newSessionButton->adjustSize();
+    newSessionButton->setAutoRaise(true);
+    newSessionButton->setPopupMode(QToolButton::InstantPopup);
+    newSessionButton->setMenu(newDiagram->menu());
+
+    connect(tabWidget, SIGNAL(currentChanged(QWidget*)), SLOT(slotTabChanged(QWidget*)));
+    connect(tabWidget, SIGNAL(contextMenu(QWidget*,const QPoint&)), m_doc, SLOT(slotDiagramPopupMenu(QWidget*,const QPoint&)));
+    tabWidget->setCornerWidget( newSessionButton, Qt::TopLeftCorner );
+    newSessionButton->installEventFilter(this);
+
+    tabWidget->addTab(new QWidget(),"test");
+    
+    if (Settings::getOptionState().generalState.tabdiagrams) {
+        // Tabbed Diagram Representation
+        m_mainSplitter->addWidget(tabWidget);
+        m_viewStack->hide();
+    }
+    m_tabWidgets << tabWidget;
 }
 
 /**

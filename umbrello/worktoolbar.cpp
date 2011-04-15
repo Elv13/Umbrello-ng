@@ -87,6 +87,7 @@ void WorkToolBar::insertBasicAssociations()
 
 void WorkToolBar::slotCheckToolBar(Uml::Diagram_Type dt)
 {
+    setEnabled(true);
     if (dt == m_Type)
         return;
     clear();

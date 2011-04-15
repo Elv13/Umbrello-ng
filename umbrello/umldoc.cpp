@@ -2741,7 +2741,11 @@ void UMLDoc::signalDiagramRenamed(UMLView* view)
     if (view) {
         Settings::OptionState optionState = Settings::getOptionState();
         if (optionState.generalState.tabdiagrams) {
-            UMLApp::app()->tabWidget()->setTabText( UMLApp::app()->tabWidget()->indexOf(view), view->getName() );
+            for (uint i =0; i < UMLApp::app()->tabWidgets().size();i++) {
+              if (UMLApp::app()->tabWidgets()[i]->indexOf(view) != -1) {
+                UMLApp::app()->tabWidgets()[i]->setTabText( UMLApp::app()->tabWidgets()[i]->indexOf(view), view->getName() );
+              }
+            }
         }
         emit sigDiagramRenamed( view->getID() );
     }

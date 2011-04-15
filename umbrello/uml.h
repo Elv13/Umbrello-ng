@@ -56,6 +56,7 @@ class QMimeData;
 class QUndoCommand;
 class QUndoView;
 class QSLider;
+class QSplitter;
 
 /**
  * The base class for UML application windows. It sets up the main
@@ -130,7 +131,9 @@ public:
 
     bool editCutCopy(bool bFromView);
 
-    KTabWidget *tabWidget();
+    QList<KTabWidget*> tabWidgets();
+    
+    void splitView();
 
     QString statusBarMsg();
 
@@ -245,6 +248,8 @@ public slots:
     void slotSetZoom(QAction* action);
     void slotZoomSliderMoved(int value);
     void slotZoom100();
+    void slotZoomOut();
+    void slotZoomIn();
 
     void setupZoomMenu();
 
@@ -363,7 +368,6 @@ private:
     KAction* deleteSelectedWidget;
     KAction* deleteDiagram;
 
-    QToolButton* m_newSessionButton;
     KMenu* m_diagramMenu;
     WorkToolBar* m_toolsbar;
     QTimer* m_clipTimer;
@@ -381,7 +385,9 @@ private:
      * Shows, and is parent of, all the UMLViews (diagrams)
      * if tabbed diagrams are enabled.
      */
-    KTabWidget* m_tabWidget;
+    QSplitter* m_mainSplitter;
+    QList<KTabWidget*> m_tabWidgets;
+    int m_activeView;
 
     /**
      * Layout supports the dynamic management of the diagram representation (tabbed/stacked)

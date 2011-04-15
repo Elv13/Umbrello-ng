@@ -11,12 +11,14 @@
 #include "classifierwidget.h"
 #include "classifierlistitem.h"
 
+class QPalette;
+
 class pGuiModel : public QObject {
  Q_OBJECT
   public:
     pGuiModel() :  name(0), parameters(0), type(0), visibility(0), stereotype(0), staticV(0), 
     abstract(0), constV(0), documentation(0), source(0), initial(0), defaultValue(0), classifier(0),
-    m_pIsModified(false),m_pIsReady(false) {}
+    m_pIsModified(false) {}
     QTableWidgetItem* name;
     QPushButton* parameters;
     KComboBox* type;
@@ -35,15 +37,17 @@ class pGuiModel : public QObject {
     void cellChanged(QTableWidgetItem* item);
     void setClassifier(UMLClassifierListItem* _classifier);
     void disconnectAndDelete();
-    void setReady();
     
   private:
     bool m_pIsModified;
-    bool m_pIsReady;
     UMLClassifierListItem* classifier;
+    static QPalette* m_greenTint;
+    static QPalette* m_redTint;
+    static bool init;
     
   public slots:
     //void destroyTableItem(QObject *obj);
+    void reload();
        
   private slots:
       void parametersChanged(bool);
@@ -54,7 +58,6 @@ class pGuiModel : public QObject {
       void constVChanged(int);
       void documentationChanged(bool);
       void sourceChanged(bool);
-      void reload();
   signals:
     void addNew();
     

@@ -7,11 +7,31 @@
 
 //Qt
 #include <QtGui/QLineEdit>
+#include <QtGui/QPalette>
 
 QHash< QTableWidgetItem*, pGuiModel* > pGuiModel::linker;
+bool pGuiModel::init = false;
+QPalette* pGuiModel::m_greenTint = 0;
+QPalette* pGuiModel::m_redTint = 0;
 
 void pGuiModel::connectSlots() 
 {
+  if (!init) {
+    QPushButton* tmp = new QPushButton(0);
+    m_greenTint = new QPalette();
+    (*m_greenTint) = tmp->palette();
+    QColor greenTint = m_greenTint->color(tmp->backgroundRole());
+    greenTint.setGreen(greenTint.green()+10);
+    m_greenTint->setColor(tmp->backgroundRole(), greenTint);
+
+    m_redTint = new QPalette();
+    (*m_redTint) = tmp->palette();
+    QColor redTint = m_redTint->color(tmp->backgroundRole());
+    redTint.setRed(redTint.red()+10);
+    m_redTint->setColor(tmp->backgroundRole(), redTint);
+    delete tmp;
+    init = true;
+  }
     //connect(m_pTopArrowB, SIGNAL( clicked() ), this, SLOT( slotTopClicked() ) );
     //connect(name, SIGNAL(  ), this, SLOT(  ) );
     //connect(QTableWidgetItem* stereotype, SIGNAL(  ), this, SLOT(  ) );
@@ -34,9 +54,7 @@ void pGuiModel::parametersChanged(bool)
     emit(addNew());
     m_pIsModified = true;
   }
-  if (classifier && m_pIsReady) {
-    
-  }
+
   qDebug() << "parametersChanged Changed";
 }
 
@@ -46,7 +64,7 @@ void pGuiModel::typeChanged(QString)
     emit(addNew());
     m_pIsModified = true;
   }
-  if (classifier && m_pIsReady) {
+  if (classifier) {
     classifier->setTypeName(type->lineEdit()->text());
   }
   qDebug() << "typeChanged Changed";
@@ -58,7 +76,7 @@ void pGuiModel::visibilityChanged(int)
     emit(addNew());
     m_pIsModified = true;
   }
-  if (classifier && m_pIsReady) {
+  if (classifier) {
     if (visibility->currentIndex() == 3) //TODO ELV find why only Uml::Visibility::FromParent -need- to be "3"
       classifier->setVisibility(Uml::Visibility::Implementation);
     else if (visibility->currentIndex() == Uml::Visibility::Public)
@@ -78,7 +96,7 @@ void pGuiModel::staticVChanged(int)
     emit(addNew());
     m_pIsModified = true;
   }
-  if (classifier && m_pIsReady) {
+  if (classifier) {
     classifier->setStatic(staticV->isChecked());
   }
   qDebug() << "staticVChanged Changed";
@@ -90,7 +108,7 @@ void pGuiModel::abstractChanged(int)
     emit(addNew());
     m_pIsModified = true;
   }
-  if (classifier && m_pIsReady) {
+  if (classifier) {
     classifier->setAbstract(
       abstract->isChecked()
     );
@@ -104,7 +122,7 @@ void pGuiModel::constVChanged(int)
     emit(addNew());
     m_pIsModified = true;
   }
-  if (classifier && m_pIsReady) {
+  if (classifier) {
     if (qobject_cast<UMLOperation*>(classifier))
       qobject_cast<UMLOperation*>(classifier)->setConst(constV->isChecked());
   }
@@ -117,7 +135,7 @@ void pGuiModel::documentationChanged(bool)
     emit(addNew());
     m_pIsModified = true;
   }
-  if (classifier && m_pIsReady) {
+  if (classifier) {
     
   }
   qDebug() << "documentationChanged Changed";
@@ -129,7 +147,7 @@ void pGuiModel::sourceChanged(bool)
     emit(addNew());
     m_pIsModified = true;
   }
-  if (classifier && m_pIsReady) {
+  if (classifier) {
     
   }
   qDebug() << "sourceChanged Changed";
@@ -145,7 +163,7 @@ void pGuiModel::cellChanged(QTableWidgetItem* item)
       emit(addNew());
       m_pIsModified = true;
     }
-    if (classifier && m_pIsReady) {
+    if (classifier) {
       classifier->setName(name->text()); 
     }
     qDebug() << "name Changed";
@@ -155,7 +173,7 @@ void pGuiModel::cellChanged(QTableWidgetItem* item)
       emit(addNew());
       m_pIsModified = true;
     }
-    if (classifier && m_pIsReady) {
+    if (classifier) {
       if (qobject_cast<UMLAttribute*>(classifier))
         qobject_cast<UMLAttribute*>(classifier)->setInitialValue(initial->text());
     }
@@ -173,7 +191,7 @@ void pGuiModel::cellChanged(QTableWidgetItem* item)
       emit(addNew());
       m_pIsModified = true;
     }
-    if (classifier && m_pIsReady) {
+    if (classifier) {
       classifier->setStereotype(stereotype->text());
     }
     qDebug() << "stereotype Changed";
@@ -184,22 +202,71 @@ void pGuiModel::setClassifier(UMLClassifierListItem* _classifier)
 {
   classifier = _classifier;
   connect(classifier, SIGNAL(modified()),this,SLOT(reload()));
+  
+  reload();
 }
 
 void pGuiModel::reload()
 {
-  if (m_pIsReady) {
-    if (classifier) {
-      if (name) {
-        if (name->text() != classifier->name())
-          name->setText(classifier->name());//TODO ELV
-      }
-      if (staticV)
-        staticV->setChecked(classifier->isStatic());
-      if (abstract)
-        abstract->setChecked(classifier->isAbstract());
+  if (classifier) {
+    if (name && (name->text() != classifier->name())) 
+        name->setText(classifier->name());//TODO ELV
+        
+    if (staticV) //TODO ELV check if its not the same value too
+      staticV->setChecked(classifier->isStatic());
+    
+    if (abstract)
+      abstract->setChecked(classifier->isAbstract());
+    
+    //QPushButton* parameters;//TODO ELV
+      
+    if (type)
+      type->lineEdit()->setText(classifier->getTypeName());
+    
+    if (visibility) {
+      if (classifier->visibility() == Uml::Visibility::Implementation) //TODO ELV find why only Uml::Visibility::FromParent -need- to be "3"
+        visibility->setCurrentIndex(3);
+      else
+        visibility->setCurrentIndex(classifier->visibility());
     }
+    
+    if (constV)
+      if (qobject_cast<UMLOperation*>(classifier))
+        constV->setChecked(qobject_cast<UMLOperation*>(classifier)->getConst());
+      
+    if (source)
+      if (qobject_cast<UMLOperation*>(classifier))
+        source->setToolTip(qobject_cast<UMLOperation*>(classifier)->getSourceCode());
+    
+    if (documentation)
+      documentation->setToolTip(classifier->doc());
+    
+    if (stereotype)
+      stereotype->setText(classifier->stereotype());
+    
+    if (initial)
+      if (qobject_cast<UMLAttribute*>(classifier))
+        initial->setText(qobject_cast<UMLAttribute*>(classifier)->getInitialValue());
+      
+    //QTableWidgetItem* defaultValue;//TODO
+
+    connect( classifier, SIGNAL(modified()),this,SLOT(slotListItemModified()) );
+    
+    if (classifier->doc().isEmpty()) {
+      documentation->setPalette(*m_greenTint);
+    }
+    else {
+      documentation->setPalette(*m_redTint);
+    }
+    
+    if (source)
+      if (qobject_cast<UMLOperation*>(classifier))
+        if (!qobject_cast<UMLOperation*>(classifier)->getSourceCode().isEmpty())
+          source->setPalette(*m_greenTint);
+        else
+          source->setPalette(*m_redTint);
   }
+    
 }
 
 void pGuiModel::disconnectAndDelete()
@@ -242,11 +309,3 @@ void pGuiModel::disconnectAndDelete()
     qDebug() << "an unknow tableitem have been destroyed externally";
   }
 }*/
-
-/**
- * Prevent a looping
- */
-void pGuiModel::setReady()
-{
-  m_pIsReady = true;
-}

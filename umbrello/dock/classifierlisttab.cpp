@@ -519,51 +519,7 @@ void ClassifierListTab::reloadItemListBox()
             pGuiModel* aRow = addRow();
             if (aRow) {
               aRow->setClassifier(listItem);
-              QString name = listItem->name();
-              if (aRow->name)
-                aRow->name->setText(name);
-              bool isStatic = listItem->isStatic();
-              if (aRow->staticV)
-                aRow->staticV->setChecked(isStatic);
-              bool isAbstract = listItem->isAbstract();
-              if (aRow->abstract)
-                aRow->abstract->setChecked(isAbstract);
-              
-              //QPushButton* aRow->parameters;//TODO ELV
-                
-              if (aRow->type)
-                aRow->type->lineEdit()->setText(listItem->getTypeName());
-              
-              
-              if (aRow->visibility) {
-                if (listItem->visibility() == Uml::Visibility::Implementation) //TODO ELV find why only Uml::Visibility::FromParent -need- to be "3"
-                  aRow->visibility->setCurrentIndex(3);
-                else
-                  aRow->visibility->setCurrentIndex(listItem->visibility());
-              }
-              
-              if (aRow->constV)
-                if (qobject_cast<UMLOperation*>(listItem))
-                  aRow->constV->setChecked(qobject_cast<UMLOperation*>(listItem)->getConst());
-                
-              if (aRow->source)
-                if (qobject_cast<UMLOperation*>(listItem))
-                  aRow->source->setToolTip(qobject_cast<UMLOperation*>(listItem)->getSourceCode());
-              
-              if (aRow->documentation)
-                aRow->documentation->setToolTip(listItem->doc());
-              
-              if (aRow->stereotype)
-                aRow->stereotype->setText(listItem->stereotype());
-              
-              if (aRow->initial)
-                if (qobject_cast<UMLAttribute*>(listItem))
-                  aRow->initial->setText(qobject_cast<UMLAttribute*>(listItem)->getInitialValue());
-                
-              //QTableWidgetItem* aRow->defaultValue;//TODO
-              
-              aRow->setReady();
-              connect( listItem, SIGNAL(modified()),this,SLOT(slotListItemModified()) );
+              aRow->reload();
             }
         }
         addEmtpyRow();
