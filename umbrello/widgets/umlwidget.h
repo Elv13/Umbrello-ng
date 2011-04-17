@@ -114,10 +114,6 @@ public:
         return m_bUseFillColour;
     }
 
-    /**
-     * Overrides the method from WidgetBase.
-     */
-    void setLineColor(const QColor &colour);
 
     /**
      * Overrides the method from WidgetBase.
@@ -129,12 +125,6 @@ public:
      */
     void setLineWidth(uint width);
 
-    /**
-     * Sets the background fill colour
-     *
-     * @param colour the new fill colour
-     */
-    void setFillColour(const QColor &colour);
 
     /**
      * Sets the background fill colour
@@ -234,12 +224,7 @@ public:
      */
     void setPenFromSettings(QPainter & p);
 
-    /**
-     * Sets the font the widget is to use.
-     *
-     * @param font Font to be set.
-     */
-    virtual void setFont( QFont font );
+
 
     /**
      *  Returns the font the widget is to use.
@@ -738,7 +723,27 @@ public slots:
      * Will use the grid settings of the @ref UMLView it belongs to.
      */
     void slotSnapToGrid();
-
+    
+    
+    /**
+     * Sets the background fill colour
+     *
+     * @param colour the new fill colour
+     */
+    void setFillColour(const QColor &colour);
+    
+    /**
+     * Overrides the method from WidgetBase.
+     */
+    void setLineColor(const QColor &colour);
+    
+    /**
+     * Sets the font the widget is to use.
+     *
+     * @param font Font to be set.
+     */
+    virtual void setFont( QFont font );
+    
 signals:
     /**
      * Emit when the widget moves its' position.

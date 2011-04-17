@@ -33,6 +33,8 @@
 #include <kcombobox.h>
 #include <klineedit.h>
 #include <ktextedit.h>
+#include <kcolorbutton.h>
+#include <kfontcombobox.h>
 
 // qt includes
 #include <QtGui/QGroupBox>
@@ -88,7 +90,7 @@ ClassGenTab::~ClassGenTab()
 {
 }
 
-void ClassGenTab::setObject(UMLObject * o)
+void ClassGenTab::setObject(UMLObject * o) //TODO ELV, update widgets instead of makeing new all over again
 {
   if (m_Type != pt_Object) {
     resetTab();
@@ -280,6 +282,33 @@ void ClassGenTab::setObject(UMLObject * o)
     m_pImplementationRB = new QRadioButton(, m_pButtonGB);
     scopeLayout->addWidget(m_pImplementationRB);
     topLayout->addWidget(m_pButtonGB);*/
+    
+    //if (m_pInstanceWidget) {
+    m_pBorderL = new QLabel(this);
+    m_pBorderL->setText(i18n("Border:"));
+    m_pBorderL->setVisible(false);
+    
+    m_pBorderColor = new KColorButton(this);
+    m_pBorderColor->setVisible(false);
+    formLayout->addRow(m_pBorderL,m_pBorderColor);
+    
+    m_pBackgroundL = new QLabel(this);
+    m_pBackgroundL->setText(i18n("Background:"));
+    m_pBackgroundL->setVisible(false);
+    
+    m_pBackgroundColor = new KColorButton(this);
+    m_pBackgroundColor->setVisible(false);
+    formLayout->addRow(m_pBackgroundL,m_pBackgroundColor);
+    
+    m_pFontL = new QLabel(this);
+    m_pFontL->setText(i18n("Font:"));
+    m_pFontL->setVisible(false);
+    
+    m_pFontCombo = new KFontComboBox();
+    m_pFontCombo->setVisible(false);
+    
+    formLayout->addRow(m_pFontL,m_pFontCombo);
+    //}
 
     // setup documentation
     m_pDocGB = new QGroupBox(this);
@@ -393,7 +422,30 @@ void ClassGenTab::setObjectWidget(ObjectWidget *o)
 
 void ClassGenTab::setUMLWidget(UMLWidget *w)
 {
-  if (m_Type != pt_Widget) {
+  
+  if (m_pInstanceWidget && m_pBorderL) {
+    disconnect(m_pBorderColor,SIGNAL(changed(QColor)),m_pInstanceWidget,SLOT(setLineColor(QColor)));
+    disconnect(m_pBackgroundColor,SIGNAL(changed(QColor)),m_pInstanceWidget,SLOT(setFillColour(QColor)));
+    disconnect(m_pFontCombo,SIGNAL(currentFontChanged(QFont)),m_pInstanceWidget,SLOT(setFont(QFont)));
+  }
+    
+  m_pInstanceWidget = w;
+  
+  if (m_pInstanceWidget && m_pBorderL) {
+    m_pBorderL->setVisible(true);
+    m_pBorderColor->setVisible(true);
+    m_pBackgroundL->setVisible(true);
+    m_pBackgroundColor->setVisible(true);
+    m_pFontCombo->setVisible(true);
+  
+    m_pBorderColor->setColor(m_pInstanceWidget->lineColor());
+    m_pBackgroundColor->setColor(m_pInstanceWidget->getFillColour());
+    connect(m_pBorderColor,SIGNAL(changed(QColor)),m_pInstanceWidget,SLOT(setLineColor(QColor)));
+    connect(m_pBackgroundColor,SIGNAL(changed(QColor)),m_pInstanceWidget,SLOT(setFillColour(QColor)));
+    connect(m_pFontCombo,SIGNAL(currentFontChanged(QFont)),m_pInstanceWidget,SLOT(setFont(QFont)));
+  }
+  
+  /*if (m_Type != pt_Widget) {
     resetTab();
     int margin = fontMetrics().height();
 
@@ -418,13 +470,13 @@ void ClassGenTab::setUMLWidget(UMLWidget *w)
     m_pClassNameLE->setText(w->name());
     m_pNameLayout->addWidget(m_pClassNameLE, 0, 1);
 
+    
+    
     m_pStereoTypeL = new QLabel(i18n("Stereotype name:"), this);
     m_pNameLayout->addWidget(m_pStereoTypeL, 1, 0);
 
     m_pStereoTypeCB = new KComboBox(true, this);
     m_pNameLayout->addWidget(m_pStereoTypeCB, 1, 1);
-
-    
 
     m_pInstanceL = new QLabel(this);
     m_pInstanceL->setText(i18n("Instance name:"));
@@ -452,7 +504,9 @@ void ClassGenTab::setUMLWidget(UMLWidget *w)
   if (w) {
     m_pStereoTypeCB->setItemText( m_pStereoTypeCB->currentIndex(), w->umlObject()->stereotype() );
     m_pStereoTypeCB->setCompletionMode( KGlobalSettings::CompletionPopup );
-  }
+  }*/
+  
+  
 }
 
 void ClassGenTab::resetTab() 

@@ -356,6 +356,7 @@ set (libwidgets_SRCS
     widgets/widget_utils.cpp
     widgets/widgetbase.cpp
     widgets/statusbartoolbutton.cpp
+    widgets/compactCombo.cpp
 )
 
 set (libcontroller_SRCS

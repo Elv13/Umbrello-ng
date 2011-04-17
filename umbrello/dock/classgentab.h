@@ -20,11 +20,13 @@ class QCheckBox;
 class KComboBox;
 class KLineEdit;
 class KTextEdit;
+class KColorButton;
 
 class UMLObject;
 class UMLWidget;
 class ObjectWidget;
 class UMLDoc;
+class KFontComboBox;
 
 
 
@@ -91,9 +93,11 @@ private:
     UMLDoc * m_pUmldoc;
 
     QGroupBox * m_pDocGB, * m_pInfGB;
-    QLabel * m_pNameL, * m_pInstanceL, * m_pStereoTypeL, * m_pPackageL, * m_pVisibilityL;
+    QLabel * m_pNameL, * m_pInstanceL, * m_pStereoTypeL, * m_pPackageL, * m_pVisibilityL, * m_pBorderL, * m_pBackgroundL, * m_pFontL;
     KLineEdit * m_pClassNameLE, * m_pInstanceLE, * m_pPackageLE;
     KComboBox * m_pStereoTypeCB, * m_pPackageCB, * m_pVisibility;
+    KColorButton * m_pBorderColor, * m_pBackgroundColor;
+    KFontComboBox * m_pFontCombo;
     QCheckBox * m_pMultiCB, * m_pDrawActorCB, * m_pAbstractCB, * m_pDeconCB;
     KTextEdit * m_pDoc;
     QGroupBox * m_pDrawAsGB;

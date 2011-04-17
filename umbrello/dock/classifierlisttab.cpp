@@ -24,6 +24,7 @@
 #include "entityattribute.h"
 #include "object_factory.h"
 #include "pguimodel.h"
+#include "compactCombo.h"
 
 #include <kdebug.h>
 #include <kdialogbuttonbox.h>
@@ -42,6 +43,7 @@
 #include <QtGui/QVBoxLayout>
 #include <QtGui/QHeaderView>
 #include <QtGui/QLineEdit>
+#include <QtGui/QToolButton>
 
 //TODO ELV
 //BEGIN
@@ -98,7 +100,6 @@ void ClassifierListTab::setClassifier(UMLClassifier* classifier)
  */
 void ClassifierListTab::setupPage()
 {
-    int margin = fontMetrics().height();
 
     //main layout contains our two group boxes, the list and the documentation
     QVBoxLayout* mainLayout = new QVBoxLayout( this );
@@ -107,17 +108,18 @@ void ClassifierListTab::setupPage()
     m_centralTableTW = new QTableWidget(this);
     mainLayout->addWidget(m_centralTableTW);
     m_centralTableTW->verticalHeader()->setVisible(false);
+    m_centralTableTW->setSelectionBehavior(QAbstractItemView::SelectRows); //TODO ELV dont work
     connect(m_centralTableTW, SIGNAL(cellChanged(int,int)), this, SLOT(itemChanged(int, int)));
     m_centralTableTW->setRowCount(0);
     
     
-    setupListGroup(margin);
+    setupListGroup(0);
     
     connect(addRow(),SIGNAL(addNew()),this,SLOT(addEmtpyRow()));
     
     mainLayout->addWidget(m_pItemListGB);
 
-    setupDocumentationGroup(margin);
+    setupDocumentationGroup(0);
     mainLayout->addWidget(m_pDocGB);
 
     reloadItemListBox();
@@ -145,7 +147,6 @@ void ClassifierListTab::setupListGroup(int margin)
 {
     QString typeName;
     QString newItemType;
-    m_centralTableTW->setSelectionBehavior(QAbstractItemView::SelectRows);
 
     switch (m_itemType) {
     case ot_Attribute: {
@@ -168,7 +169,9 @@ void ClassifierListTab::setupListGroup(int margin)
         typeName = i18n("Operations");
         m_centralTableTW->setColumnCount(10);
         m_centralTableTW->setHorizontalHeaderItem(0,new QTableWidgetItem("Name"));
-        m_centralTableTW->setHorizontalHeaderItem(1,new QTableWidgetItem("Parameters"));
+        QTableWidgetItem* param = new QTableWidgetItem("Parameters");
+        param->setSizeHint(QSize(0,0));
+        m_centralTableTW->setHorizontalHeaderItem(1,param);
         m_centralTableTW->setHorizontalHeaderItem(2,new QTableWidgetItem("Type"));
         m_centralTableTW->setHorizontalHeaderItem(3,new QTableWidgetItem("Visibility"));
         m_centralTableTW->setHorizontalHeaderItem(4,new QTableWidgetItem("Stereotype"));
@@ -326,19 +329,18 @@ pGuiModel* ClassifierListTab::addRow()
     switch (m_itemType) {
     case ot_Attribute: {
         QTableWidgetItem* nameWidget = new QTableWidgetItem("");
-        nameWidget->setFlags(Qt::ItemIsEditable|Qt::ItemIsEnabled);
+        nameWidget->setFlags(Qt::ItemIsEditable|Qt::ItemIsEnabled|Qt::ItemIsSelectable);
         m_centralTableTW->setItem(m_rowCount,0,nameWidget);
         aRow->name = nameWidget;
         //connect(nameWidget,SIGNAL(destroyed(QObject*)),aRow,SLOT(destroyTableItem(QObject*)));
         pGuiModel::linker[nameWidget] = aRow;
         
-        KComboBox* typeCbb = new KComboBox(this);
-        typeCbb->setEditable(true);
+        CompactCombo* typeCbb = new CompactCombo(this);
         m_centralTableTW->setCellWidget(m_rowCount,1,typeCbb);
         aRow->type = typeCbb;
         
         QTableWidgetItem* inititalWidget = new QTableWidgetItem("");
-        inititalWidget->setFlags(Qt::ItemIsEditable|Qt::ItemIsEnabled);
+        inititalWidget->setFlags(Qt::ItemIsEditable|Qt::ItemIsEnabled|Qt::ItemIsSelectable);
         m_centralTableTW->setItem(m_rowCount,2,inititalWidget);
         aRow->initial = inititalWidget;
         //connect(inititalWidget,SIGNAL(destroyed(QObject*)),aRow,SLOT(destroyTableItem(QObject*)));
@@ -352,7 +354,7 @@ pGuiModel* ClassifierListTab::addRow()
         aRow->visibility = visibilityCbb;
         
         QTableWidgetItem* stereotypeWidget = new QTableWidgetItem("");
-        stereotypeWidget->setFlags(Qt::ItemIsEditable|Qt::ItemIsEnabled);
+        stereotypeWidget->setFlags(Qt::ItemIsEditable|Qt::ItemIsEnabled|Qt::ItemIsSelectable);
         m_centralTableTW->setItem(m_rowCount,4,stereotypeWidget);
         aRow->stereotype = stereotypeWidget;
         //connect(stereotypeWidget,SIGNAL(destroyed(QObject*)),aRow,SLOT(destroyTableItem(QObject*)));
@@ -372,18 +374,34 @@ pGuiModel* ClassifierListTab::addRow()
     case ot_Operation: {
         typeName = i18n("Operations");
         QTableWidgetItem* nameWidget = new QTableWidgetItem("");
-        nameWidget->setFlags(Qt::ItemIsEditable|Qt::ItemIsEnabled);
+        nameWidget->setFlags(Qt::ItemIsEditable|Qt::ItemIsEnabled|Qt::ItemIsSelectable);
         m_centralTableTW->setItem(m_rowCount,0,nameWidget);
         aRow->name = nameWidget;
         //connect(nameWidget,SIGNAL(destroyed(QObject*)),aRow,SLOT(destroyTableItem(QObject*)));
         pGuiModel::linker[nameWidget] = aRow;
         
         QPushButton* paramPb = new QPushButton(this);
-        paramPb->setText("Paramater");
-        m_centralTableTW->setCellWidget(m_rowCount,1,paramPb);
+        paramPb->setFlat(true);
+        paramPb->setMinimumSize(0,0);
+        paramPb->setContentsMargins(0,0,0,0);
+        paramPb->setSizePolicy(QSizePolicy(QSizePolicy::Minimum,QSizePolicy::Preferred));
         aRow->parameters = paramPb;
         
-        KComboBox* typeCbb = new KComboBox(this);
+        QToolButton* addParamPb = new QToolButton(this);
+        addParamPb->setIcon(KIcon("list-add"));
+        addParamPb->setToolTip("Add a new parameter");
+        aRow->addParameters = addParamPb;
+        
+        QWidget* paramWdg = new QWidget(this);
+        paramWdg->setContentsMargins(0,0,0,0);
+        paramWdg->setSizePolicy(QSizePolicy(QSizePolicy::Minimum,QSizePolicy::Preferred));
+        QHBoxLayout* paramLayout = new QHBoxLayout(paramWdg);
+        paramLayout->setContentsMargins(0,0,0,0);
+        paramLayout->addWidget(paramPb);
+        paramLayout->addWidget(addParamPb);
+        m_centralTableTW->setCellWidget(m_rowCount,1,paramWdg);
+        
+        CompactCombo* typeCbb = new CompactCombo(this);
         typeCbb->setEditable(true);
         m_centralTableTW->setCellWidget(m_rowCount,2,typeCbb);
         aRow->type = typeCbb;
@@ -396,7 +414,7 @@ pGuiModel* ClassifierListTab::addRow()
         aRow->visibility = visibilityCbb;
         
         QTableWidgetItem* stereotypeWidget = new QTableWidgetItem("");
-        stereotypeWidget->setFlags(Qt::ItemIsEditable|Qt::ItemIsEnabled);
+        stereotypeWidget->setFlags(Qt::ItemIsEditable|Qt::ItemIsEnabled|Qt::ItemIsSelectable);
         m_centralTableTW->setItem(m_rowCount,4,stereotypeWidget);
         aRow->stereotype = stereotypeWidget;
         //connect(stereotypeWidget,SIGNAL(destroyed(QObject*)),aRow,SLOT(destroyTableItem(QObject*)));
@@ -429,19 +447,19 @@ pGuiModel* ClassifierListTab::addRow()
     case ot_Template: {
         typeName = i18n("Templates");
         QTableWidgetItem* nameWidget = new QTableWidgetItem("");
-        nameWidget->setFlags(Qt::ItemIsEditable|Qt::ItemIsEnabled);
+        nameWidget->setFlags(Qt::ItemIsEditable|Qt::ItemIsEnabled|Qt::ItemIsSelectable);
         m_centralTableTW->setItem(m_rowCount,0,nameWidget);
         aRow->name = nameWidget;
         //connect(nameWidget,SIGNAL(destroyed(QObject*)),aRow,SLOT(destroyTableItem(QObject*)));
         pGuiModel::linker[nameWidget] = aRow;
         
-        KComboBox* typeCbb = new KComboBox(this);
+        CompactCombo* typeCbb = new CompactCombo(this);
         typeCbb->setEditable(true);
         m_centralTableTW->setCellWidget(m_rowCount,1,typeCbb);
         aRow->type = typeCbb;
         
         QTableWidgetItem* stereotypeWidget = new QTableWidgetItem("");
-        stereotypeWidget->setFlags(Qt::ItemIsEditable|Qt::ItemIsEnabled);
+        stereotypeWidget->setFlags(Qt::ItemIsEditable|Qt::ItemIsEnabled|Qt::ItemIsSelectable);
         m_centralTableTW->setItem(m_rowCount,2,stereotypeWidget);
         aRow->stereotype = stereotypeWidget;
         //connect(stereotypeWidget,SIGNAL(destroyed(QObject*)),aRow,SLOT(destroyTableItem(QObject*)));
@@ -452,14 +470,14 @@ pGuiModel* ClassifierListTab::addRow()
     case ot_EnumLiteral: {
         typeName = i18n("Enum Literals");
         QTableWidgetItem* nameWidget = new QTableWidgetItem("");
-        nameWidget->setFlags(Qt::ItemIsEditable|Qt::ItemIsEnabled);
+        nameWidget->setFlags(Qt::ItemIsEditable|Qt::ItemIsEnabled|Qt::ItemIsSelectable);
         m_centralTableTW->setItem(m_rowCount,0,nameWidget);
         aRow->name = nameWidget;
         //connect(nameWidget,SIGNAL(destroyed(QObject*)),aRow,SLOT(destroyTableItem(QObject*)));
         pGuiModel::linker[nameWidget] = aRow;
         
         QTableWidgetItem* valWidget = new QTableWidgetItem("");
-        valWidget->setFlags(Qt::ItemIsEditable|Qt::ItemIsEnabled);
+        valWidget->setFlags(Qt::ItemIsEditable|Qt::ItemIsEnabled|Qt::ItemIsSelectable);
         m_centralTableTW->setItem(m_rowCount,1,valWidget);
         aRow->defaultValue = valWidget;
         //connect(valWidget,SIGNAL(destroyed(QObject*)),aRow,SLOT(destroyTableItem(QObject*)));

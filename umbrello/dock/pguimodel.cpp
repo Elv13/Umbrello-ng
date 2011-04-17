@@ -4,6 +4,12 @@
 //app include
 #include "attribute.h"
 #include "operation.h"
+#include "classifier.h"
+#include "template.h"
+#include "umloperationdialog.h"
+#include "umltemplatelist.h"
+#include "uml.h"
+#include "umldoc.h"
 
 //Qt
 #include <QtGui/QLineEdit>
@@ -32,19 +38,20 @@ void pGuiModel::connectSlots()
     delete tmp;
     init = true;
   }
-    //connect(m_pTopArrowB, SIGNAL( clicked() ), this, SLOT( slotTopClicked() ) );
-    //connect(name, SIGNAL(  ), this, SLOT(  ) );
-    //connect(QTableWidgetItem* stereotype, SIGNAL(  ), this, SLOT(  ) );
-    //connect(QTableWidgetItem* initial, SIGNAL(  ), this, SLOT(  ) );
-    //connect(QTableWidgetItem* defaultValue, SIGNAL(  ), this, SLOT(  ) );
-    connect(parameters, SIGNAL( clicked(bool) ), this, SLOT( parametersChanged(bool) ) );
-    connect(type, SIGNAL( editTextChanged(QString) ), this, SLOT( typeChanged(QString) ) );
-    connect(visibility, SIGNAL( currentIndexChanged(int) ), this, SLOT( visibilityChanged(int) ) );
-    connect(staticV, SIGNAL( stateChanged(int) ), this, SLOT( staticVChanged(int) ) );
-    connect(abstract, SIGNAL( stateChanged(int) ), this, SLOT( abstractChanged(int) ) );
-    connect(constV, SIGNAL( stateChanged(int) ), this, SLOT( constVChanged(int) ) );
-    connect(documentation, SIGNAL( clicked(bool) ), this, SLOT( documentationChanged(bool) ) );
-    connect(source, SIGNAL( clicked(bool) ), this, SLOT( sourceChanged(bool) ) );
+  
+  //connect(m_pTopArrowB, SIGNAL( clicked() ), this, SLOT( slotTopClicked() ) );
+  //connect(name, SIGNAL(  ), this, SLOT(  ) );
+  //connect(QTableWidgetItem* stereotype, SIGNAL(  ), this, SLOT(  ) );
+  //connect(QTableWidgetItem* initial, SIGNAL(  ), this, SLOT(  ) );
+  //connect(QTableWidgetItem* defaultValue, SIGNAL(  ), this, SLOT(  ) );
+  connect(parameters, SIGNAL( clicked(bool) ), this, SLOT( parametersChanged(bool) ) );
+  connect(type, SIGNAL( editTextChanged(QString) ), this, SLOT( typeChanged(QString) ) );
+  connect(visibility, SIGNAL( currentIndexChanged(int) ), this, SLOT( visibilityChanged(int) ) );
+  connect(staticV, SIGNAL( stateChanged(int) ), this, SLOT( staticVChanged(int) ) );
+  connect(abstract, SIGNAL( stateChanged(int) ), this, SLOT( abstractChanged(int) ) );
+  connect(constV, SIGNAL( stateChanged(int) ), this, SLOT( constVChanged(int) ) );
+  connect(documentation, SIGNAL( clicked(bool) ), this, SLOT( documentationChanged(bool) ) );
+  connect(source, SIGNAL( clicked(bool) ), this, SLOT( sourceChanged(bool) ) );
 }
 
 
@@ -54,7 +61,13 @@ void pGuiModel::parametersChanged(bool)
     emit(addNew());
     m_pIsModified = true;
   }
-
+  
+  if (qobject_cast<UMLOperation*>(classifier)) {
+    QPointer<UMLOperationDialog> dialog = new UMLOperationDialog(UMLApp::app(), qobject_cast<UMLOperation*>(classifier));
+    dialog->exec();
+    delete dialog;
+  }
+  
   qDebug() << "parametersChanged Changed";
 }
 
@@ -218,10 +231,26 @@ void pGuiModel::reload()
     if (abstract)
       abstract->setChecked(classifier->isAbstract());
     
-    //QPushButton* parameters;//TODO ELV
+      if (parameters) {
+        if (qobject_cast<UMLOperation*>(classifier)) {
+          QString newText;
+          UMLAttributeList paramList = qobject_cast<UMLOperation*>(classifier)->getParmList();
+          if (paramList.size()) {
+            parameters->setStyleSheet("text-align:left;");
+            parameters->setFlat(true);
+          }
+          foreach (UMLAttribute* attr, paramList) {
+            newText += attr->getTypeName() + " " + attr->name();
+            if (!(attr->getInitialValue().isEmpty()))
+              newText += "(" + attr->getInitialValue() + ")";
+            newText +=", ";
+          }
+          parameters->setText(newText);
+        }
+      }
       
     if (type)
-      type->lineEdit()->setText(classifier->getTypeName());
+      insertTypesSorted(classifier->getTypeName());//type->setText(classifier->getTypeName());
     
     if (visibility) {
       if (classifier->visibility() == Uml::Visibility::Implementation) //TODO ELV find why only Uml::Visibility::FromParent -need- to be "3"
@@ -281,6 +310,10 @@ void pGuiModel::disconnectAndDelete()
   disconnect(constV, SIGNAL( stateChanged(int) ), this, SLOT( constVChanged(int) ) );
   disconnect(documentation, SIGNAL( clicked(bool) ), this, SLOT( documentationChanged(bool) ) );
   disconnect(source, SIGNAL( clicked(bool) ), this, SLOT( sourceChanged(bool) ) );*/
+  linker[name]=NULL;
+  linker[stereotype]=NULL;
+  linker[initial]=NULL;
+  linker[defaultValue]=NULL;
   disconnect(); //Everything else
 }
 
@@ -309,3 +342,65 @@ void pGuiModel::disconnectAndDelete()
     qDebug() << "an unknow tableitem have been destroyed externally";
   }
 }*/
+
+
+/**
+ * Inserts @p type into the type-combobox as well as its completion object.
+ * The combobox is cleared and all types together with the optional new one
+ * sorted and then added again.
+ * @param type   a new type to add and selected
+ */
+void pGuiModel::insertTypesSorted(const QString& currentType)
+{
+  if (type) {
+    disconnect(type, SIGNAL( editTextChanged(QString) ), this, SLOT( typeChanged(QString) ) );
+    type->clear();
+    QStringList types;
+    // add template parameters
+    UMLClassifier *pConcept = 0;
+    
+    if (qobject_cast<UMLAttribute*>(classifier))
+      pConcept = qobject_cast<UMLClassifier*>(classifier->parent());
+    else if (qobject_cast<UMLOperation*>(classifier))
+      pConcept = qobject_cast<UMLClassifier*>(classifier->parent());
+
+    if (!qobject_cast<UMLClassifier*>(pConcept)) {
+      type->setText(currentType);
+      connect(type, SIGNAL( editTextChanged(QString) ), this, SLOT( typeChanged(QString) ) );
+      return;
+    }
+    
+    
+    UMLTemplateList tmplParams( pConcept->getTemplateList() );
+    foreach( UMLTemplate* t, tmplParams ) {
+        types << t->name();
+    }
+        
+    // now add the Conceptsm_pUmldoc
+    UMLClassifierList namesList( UMLApp::app()->document()->concepts() );
+    foreach(UMLClassifier* obj, namesList ) {
+        types << obj->fullyQualifiedName();
+    }
+    // add the given parameter
+    if ( !types.contains(currentType) ) {
+        types << currentType;
+    }
+    types.sort();
+
+    
+    //type->clear();
+    
+    type->addItems(types);
+    
+
+    // select the given parameter
+    int currentIndex = type->findText(currentType);
+    if (currentIndex > -1) {
+        type->setCurrentIndex(currentIndex);
+    }
+    else {
+      type->setText(currentType);
+    }
+    connect(type, SIGNAL( editTextChanged(QString) ), this, SLOT( typeChanged(QString) ) );
+  }
+}
