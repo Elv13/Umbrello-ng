@@ -12,7 +12,7 @@
 #include "classpropdock.h"
 
 // app includes
-#include "assocpage.h"
+#include "assoctab.h"
 #include "classifierlisttab.h"
 #include "classifierwidget.h"
 #include "classoptionstab.h"
@@ -75,6 +75,33 @@ void ClassPropDock::setObject(UMLObject * c, bool assoc) {
     m_pObject = c;
     //setupPages(assoc);
     updatePages();
+    
+    //add extra pages for class
+    Uml::Object_Type ot = m_pObject->baseType();
+    if (ot == Uml::ot_Class ) {
+        m_pAttPage->setVisible(true);
+    }
+    if (ot == Uml::ot_Class || ot == Uml::ot_Interface) {
+        m_pOpsPage->setVisible(true);
+    }
+    if (ot == Uml::ot_Class || ot == Uml::ot_Interface) {
+        m_pTemplatePage->setVisible(true);
+    }
+    if (ot == Uml::ot_Enum) {
+        m_pEnumLiteralPage->setVisible(true);
+    }
+    if (ot == Uml::ot_Entity) {
+        m_pEntityAttributePage->setVisible(true);
+        //setupEntityConstraintsPage();
+    }
+    if (ot == Uml::ot_Package ) {
+        //setupContentsPage();
+    }
+    if (assoc) {
+        m_pAssocTab->setVisible(true);
+    } else {
+        m_pAssocTab = 0;
+    }
   }
 }
 
@@ -273,32 +300,16 @@ void ClassPropDock::setupPages(bool assoc)
 {
     setupGeneralPage();
 
-    //Uml::Object_Type ot = m_pObject->baseType();//TODO ELV
+    //TODO That's not very efficient, they dont need to be created now, but tabs index would be affacted
     // add extra pages for class
-    //if (ot == Uml::ot_Class ) {
-        setupAttributesPage();
-    //}
-    //if (ot == Uml::ot_Class || ot == Uml::ot_Interface) {
-        setupOperationsPage();
-    //}
-    //if (ot == Uml::ot_Class || ot == Uml::ot_Interface) {
-        setupTemplatesPage();
-    //}
-    //if (ot == Uml::ot_Enum) {
-        setupEnumLiteralsPage();
-    //}
-    //if (ot == Uml::ot_Entity) {
-        setupEntityAttributesPage();
-        setupEntityConstraintsPage();
-    //}
-    //if (ot == Uml::ot_Package ) {
-        setupContentsPage();
-    //}
-    //if (assoc) {
-        setupAssociationsPage();
-    //} else {
-        m_pAssocPage = 0;
-    //}
+    setupAttributesPage();
+    setupOperationsPage();
+    setupTemplatesPage();
+    setupEnumLiteralsPage();
+    setupEntityAttributesPage();
+    setupEntityConstraintsPage();
+    setupContentsPage();
+    setupAssociationsPage();
         
     //setupColorPage(); //TODO ELV
     //setupFontPage(); //TODO ELV
@@ -320,6 +331,7 @@ void ClassPropDock::updatePages()
       m_pTemplatePage->setClassifier((UMLClassifier*)m_pObject);
       m_pEnumLiteralPage->setClassifier((UMLClassifier*)m_pObject);
       m_pEntityAttributePage->setClassifier((UMLClassifier*)m_pObject);
+      m_pAssocTab->setObject(m_pObject, UMLApp::app()->currentView());
     }
     
     if (m_pObject)
@@ -433,8 +445,8 @@ void ClassPropDock::setupContentsPage()
  */
 void ClassPropDock::setupAssociationsPage()
 {
-    m_pAssocPage = new AssocPage(m_pTabWidget, UMLApp::app()->currentView(), m_pObject);
-    m_pTabWidget->addTab(m_pAssocPage,i18n("Associations"));
+    m_pAssocTab = new AssocTab(m_pTabWidget, UMLApp::app()->currentView(), m_pObject);
+    m_pTabWidget->addTab(m_pAssocTab,i18n("Associations"));
 }
 
 /**
@@ -444,7 +456,7 @@ void ClassPropDock::setupInstancePages()
 {
     m_pGenPage = new ClassGenTab(m_pDoc, m_pTabWidget, m_pWidget);
     m_pTabWidget->addTab(m_pGenPage,i18nc("instance general settings page name", "General"));
-    m_pAssocPage = 0;
+    m_pAssocTab = 0;
 }
 
 /**

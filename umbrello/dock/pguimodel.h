@@ -20,18 +20,23 @@ class pGuiModel : public QObject {
   public:
     pGuiModel() :  name(0), parameters(0), type(0), visibility(0), stereotype(0), staticV(0), 
     abstract(0), constV(0), documentation(0), source(0), initial(0), defaultValue(0), classifier(0),
-    m_pIsModified(false) {}
+    m_pIsModified(false),attributes(0),autoIncrement(0),allowNull(0),indexed(0),length(0) {}
     QTableWidgetItem* name;
     QTableWidgetItem* stereotype;
     QTableWidgetItem* initial;
     QTableWidgetItem* defaultValue;
+    QTableWidgetItem* length;
     QPushButton* parameters;
     QToolButton* addParameters;
     CompactCombo* type;
     KComboBox* visibility;
+    KComboBox* attributes;
     QCheckBox* staticV;
     QCheckBox* abstract;
     QCheckBox* constV;
+    QCheckBox* autoIncrement;
+    QCheckBox* allowNull;
+    QCheckBox* indexed;
     QPushButton* documentation;
     QPushButton* source;
     static QHash< QTableWidgetItem*, pGuiModel* > linker; //That suck, but QTableWidgetItems dont have their own signals...
@@ -59,7 +64,11 @@ class pGuiModel : public QObject {
       void visibilityChanged(int);
       void staticVChanged(int);
       void abstractChanged(int);
+      void attributesChanged(int);
       void constVChanged(int);
+      void autoIncrementChanged(int);
+      void allowNullChanged(int);
+      void indexedChanged(int);
       void documentationChanged(bool);
       void sourceChanged(bool);
   signals:

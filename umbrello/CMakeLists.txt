@@ -209,6 +209,7 @@ set(libdialogs_SRCS
     dock/classpropdock.cpp
     dock/dockManager.cpp
     dock/classgentab.cpp
+    dock/assoctab.cpp
     dock/classoptionstab.cpp
     dock/classifierlisttab.cpp
     dock/pguimodel.cpp

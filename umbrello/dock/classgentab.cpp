@@ -437,6 +437,8 @@ void ClassGenTab::setUMLWidget(UMLWidget *w)
     m_pBackgroundL->setVisible(true);
     m_pBackgroundColor->setVisible(true);
     m_pFontCombo->setVisible(true);
+    m_pFontL->setVisible(true);
+    
   
     m_pBorderColor->setColor(m_pInstanceWidget->lineColor());
     m_pBackgroundColor->setColor(m_pInstanceWidget->getFillColour());

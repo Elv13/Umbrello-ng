@@ -44,14 +44,30 @@ void pGuiModel::connectSlots()
   //connect(QTableWidgetItem* stereotype, SIGNAL(  ), this, SLOT(  ) );
   //connect(QTableWidgetItem* initial, SIGNAL(  ), this, SLOT(  ) );
   //connect(QTableWidgetItem* defaultValue, SIGNAL(  ), this, SLOT(  ) );
-  connect(parameters, SIGNAL( clicked(bool) ), this, SLOT( parametersChanged(bool) ) );
-  connect(type, SIGNAL( editTextChanged(QString) ), this, SLOT( typeChanged(QString) ) );
-  connect(visibility, SIGNAL( currentIndexChanged(int) ), this, SLOT( visibilityChanged(int) ) );
-  connect(staticV, SIGNAL( stateChanged(int) ), this, SLOT( staticVChanged(int) ) );
-  connect(abstract, SIGNAL( stateChanged(int) ), this, SLOT( abstractChanged(int) ) );
-  connect(constV, SIGNAL( stateChanged(int) ), this, SLOT( constVChanged(int) ) );
-  connect(documentation, SIGNAL( clicked(bool) ), this, SLOT( documentationChanged(bool) ) );
-  connect(source, SIGNAL( clicked(bool) ), this, SLOT( sourceChanged(bool) ) );
+  if (parameters)
+    connect(parameters, SIGNAL( clicked(bool) ), this, SLOT( parametersChanged(bool) ) );
+  if (type)
+    connect(type, SIGNAL( editTextChanged(QString) ), this, SLOT( typeChanged(QString) ) );
+  if (visibility)
+    connect(visibility, SIGNAL( currentIndexChanged(int) ), this, SLOT( visibilityChanged(int) ) );
+  if (attributes)
+    connect(attributes, SIGNAL( currentIndexChanged(int) ), this, SLOT( attributesChanged(int) ) );
+  if (staticV)
+    connect(staticV, SIGNAL( stateChanged(int) ), this, SLOT( staticVChanged(int) ) );
+  if (abstract)
+    connect(abstract, SIGNAL( stateChanged(int) ), this, SLOT( abstractChanged(int) ) );
+  if (constV)
+    connect(constV, SIGNAL( stateChanged(int) ), this, SLOT( constVChanged(int) ) );
+  if (autoIncrement)
+    connect(autoIncrement, SIGNAL( stateChanged(int) ), this, SLOT( autoIncrementChanged(int) ) );
+  if (allowNull)
+    connect(allowNull, SIGNAL( stateChanged(int) ), this, SLOT( allowNullChanged(int) ) );
+  if (indexed)
+    connect(indexed, SIGNAL( stateChanged(int) ), this, SLOT( indexedChanged(int) ) );
+  if (documentation)
+    connect(documentation, SIGNAL( clicked(bool) ), this, SLOT( documentationChanged(bool) ) );
+  if (source)
+    connect(source, SIGNAL( clicked(bool) ), this, SLOT( sourceChanged(bool) ) );
 }
 
 
@@ -103,6 +119,11 @@ void pGuiModel::visibilityChanged(int)
   qDebug() << "visibilityChanged Changed";
 }
 
+void pGuiModel::attributesChanged(int)
+{
+  qDebug() << "attributesChanged Changed";
+}
+
 void pGuiModel::staticVChanged(int)
 {
   if (!m_pIsModified) {
@@ -140,6 +161,33 @@ void pGuiModel::constVChanged(int)
       qobject_cast<UMLOperation*>(classifier)->setConst(constV->isChecked());
   }
   qDebug() << "constVChanged Changed";
+}
+
+void pGuiModel::autoIncrementChanged(int)
+{
+  if (!m_pIsModified) {
+    emit(addNew());
+    m_pIsModified = true;
+  }
+  qDebug() << "autoIncrementChanged Changed";
+}
+
+void pGuiModel::allowNullChanged(int)
+{
+  if (!m_pIsModified) {
+    emit(addNew());
+    m_pIsModified = true;
+  }
+  qDebug() << "allowNull Changed";
+}
+
+void pGuiModel::indexedChanged(int)
+{
+  if (!m_pIsModified) {
+    emit(addNew());
+    m_pIsModified = true;
+  }
+  qDebug() << "indexed Changed";
 }
 
 void pGuiModel::documentationChanged(bool)
@@ -209,6 +257,14 @@ void pGuiModel::cellChanged(QTableWidgetItem* item)
     }
     qDebug() << "stereotype Changed";
   }
+  else if (item == length) {
+    if (!m_pIsModified) {
+      emit(addNew());
+      m_pIsModified = true;
+    }
+    //TODO ELV
+    qDebug() << "length Changed";
+  }
 }
 
 void pGuiModel::setClassifier(UMLClassifierListItem* _classifier)
@@ -223,7 +279,7 @@ void pGuiModel::reload()
 {
   if (classifier) {
     if (name && (name->text() != classifier->name())) 
-        name->setText(classifier->name());//TODO ELV
+        name->setText(classifier->name());
         
     if (staticV) //TODO ELV check if its not the same value too
       staticV->setChecked(classifier->isStatic());

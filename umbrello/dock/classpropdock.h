@@ -26,7 +26,7 @@ class ClassGenTab;
 class ClassifierListTab;
 class ConstraintListPage;
 class PkgContentsPage;
-class AssocPage;
+class AssocTab;
 class ClassOptionsTab;
 class UMLWidgetColorPage;
 
@@ -90,8 +90,8 @@ private:
     ClassifierListTab*   m_pEntityAttributePage;
     ConstraintListPage*  m_pEntityConstraintPage;
     PkgContentsPage*     m_pPkgContentsPage;
-    AssocPage*           m_pAssocPage;
-    ClassOptionsTab*    m_pOptionsPage;
+    AssocTab*            m_pAssocTab;
+    ClassOptionsTab*     m_pOptionsPage;
     UMLWidgetColorPage*  m_pColorPage;
     QTabWidget*          m_pTabWidget;
 

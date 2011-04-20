@@ -203,9 +203,28 @@ void ClassifierListTab::setupListGroup(int margin)
         m_centralTableTW->setHorizontalHeaderItem(0,new QTableWidgetItem("Name"));
         m_centralTableTW->setHorizontalHeaderItem(1,new QTableWidgetItem("Default Value"));
         break;
-    case ot_EntityAttribute:
+    case ot_EntityAttribute: {
         typeName = i18n("Entity Attributes");
         newItemType = i18n("N&ew Entity Attribute...");
+        m_centralTableTW->setHorizontalHeaderItem(0,new QTableWidgetItem("Name"));
+        m_centralTableTW->setHorizontalHeaderItem(1,new QTableWidgetItem("Type"));
+        m_centralTableTW->setHorizontalHeaderItem(2,new QTableWidgetItem("Default Value"));
+        m_centralTableTW->setHorizontalHeaderItem(3,new QTableWidgetItem("Stereotype"));
+        m_centralTableTW->setHorizontalHeaderItem(4,new QTableWidgetItem("Length"));
+        m_centralTableTW->setHorizontalHeaderItem(5,new QTableWidgetItem("Attributes"));
+        QTableWidgetItem* autoI = new QTableWidgetItem("A");
+        autoI->setToolTip("Auto Increment");
+        m_centralTableTW->setHorizontalHeaderItem(6,autoI);
+        QTableWidgetItem* allowNull = new QTableWidgetItem("N");
+        allowNull->setToolTip("Allow null");
+        m_centralTableTW->setHorizontalHeaderItem(7,allowNull);
+        QTableWidgetItem* index = new QTableWidgetItem("I");
+        index->setToolTip("Index");
+        m_centralTableTW->setHorizontalHeaderItem(8,index);
+        QTableWidgetItem* doc = new QTableWidgetItem("Doc");
+        doc->setToolTip("Documentation");
+        m_centralTableTW->setHorizontalHeaderItem(9,doc);
+      }
         break;
     case ot_EntityConstraint:
         typeName = i18n( "Constraints" );
@@ -408,7 +427,7 @@ pGuiModel* ClassifierListTab::addRow()
         
         KComboBox* visibilityCbb = new KComboBox(this);
         QStringList availableVisibilities;
-        availableVisibilities << "Public" << "Private" << "Protected" << "Implementation";
+        availableVisibilities << "Public" << "Private" << "Protected" << "Implementation"; //TODO anything better?
         visibilityCbb->addItems(availableVisibilities);
         m_centralTableTW->setCellWidget(m_rowCount,3,visibilityCbb);
         aRow->visibility = visibilityCbb;
@@ -473,7 +492,6 @@ pGuiModel* ClassifierListTab::addRow()
         nameWidget->setFlags(Qt::ItemIsEditable|Qt::ItemIsEnabled|Qt::ItemIsSelectable);
         m_centralTableTW->setItem(m_rowCount,0,nameWidget);
         aRow->name = nameWidget;
-        //connect(nameWidget,SIGNAL(destroyed(QObject*)),aRow,SLOT(destroyTableItem(QObject*)));
         pGuiModel::linker[nameWidget] = aRow;
         
         QTableWidgetItem* valWidget = new QTableWidgetItem("");
@@ -485,12 +503,63 @@ pGuiModel* ClassifierListTab::addRow()
         
       }
       break;
-    case ot_EntityAttribute:
+    case ot_EntityAttribute: {
         typeName = i18n("Entity Attributes");
         newItemType = i18n("N&ew Entity Attribute...");
-        delete aRow;
-        aRow=0;
-        break;
+        
+        QTableWidgetItem* nameWidget = new QTableWidgetItem("");
+        nameWidget->setFlags(Qt::ItemIsEditable|Qt::ItemIsEnabled|Qt::ItemIsSelectable);
+        m_centralTableTW->setItem(m_rowCount,0,nameWidget);
+        aRow->name = nameWidget;
+        pGuiModel::linker[nameWidget] = aRow;
+        
+        CompactCombo* typeCbb = new CompactCombo(this);
+        m_centralTableTW->setCellWidget(m_rowCount,1,typeCbb);
+        aRow->type = typeCbb;
+        
+        QTableWidgetItem* valWidget = new QTableWidgetItem("");
+        valWidget->setFlags(Qt::ItemIsEditable|Qt::ItemIsEnabled|Qt::ItemIsSelectable);
+        m_centralTableTW->setItem(m_rowCount,2,valWidget);
+        aRow->defaultValue = valWidget;
+        pGuiModel::linker[nameWidget] = aRow;
+        
+        QTableWidgetItem* stereotypeWidget = new QTableWidgetItem("");
+        stereotypeWidget->setFlags(Qt::ItemIsEditable|Qt::ItemIsEnabled|Qt::ItemIsSelectable);
+        m_centralTableTW->setItem(m_rowCount,3,stereotypeWidget);
+        aRow->stereotype = stereotypeWidget;
+        pGuiModel::linker[nameWidget] = aRow;
+        
+        QTableWidgetItem* lengthWidget = new QTableWidgetItem("");
+        lengthWidget->setFlags(Qt::ItemIsEditable|Qt::ItemIsEnabled|Qt::ItemIsSelectable);
+        m_centralTableTW->setItem(m_rowCount,4,lengthWidget);
+        aRow->length = lengthWidget;
+        pGuiModel::linker[nameWidget] = aRow;
+        
+        KComboBox* attributesCbb = new KComboBox(this);
+        //QStringList availableVisibilities;
+        //availableVisibilities << "Public" << "Private" << "Protected" << "Implementation";
+        //attributesCbb->addItems(availableVisibilities);
+        m_centralTableTW->setCellWidget(m_rowCount,5,attributesCbb);
+        aRow->attributes = attributesCbb;
+        
+        QCheckBox* autoI = new QCheckBox(this);
+        m_centralTableTW->setCellWidget(m_rowCount,6,autoI);
+        aRow->autoIncrement = autoI;
+        
+        QCheckBox* allowNull = new QCheckBox(this);
+        m_centralTableTW->setCellWidget(m_rowCount,7,allowNull);
+        aRow->allowNull = allowNull;
+        
+        QCheckBox* indexed = new QCheckBox(this);
+        m_centralTableTW->setCellWidget(m_rowCount,8,indexed);
+        aRow->indexed = indexed;
+        
+        QPushButton* docPb = new QPushButton(this);
+        docPb->setText("Doc");
+        m_centralTableTW->setCellWidget(m_rowCount,9,docPb);
+        aRow->documentation = docPb;
+      }
+      break;
     case ot_EntityConstraint:
         typeName = i18n( "Constraints" );
         newItemType = i18n( "N&ew Constraint..." );
