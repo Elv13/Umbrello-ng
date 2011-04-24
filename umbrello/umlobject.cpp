@@ -1048,4 +1048,33 @@ QDebug operator<< (QDebug s, const UMLObject& a)
     return s;
 }
 
+/**
+ * public slots
+ */
+void UMLObject::slotSetName(QString name)
+{
+  setName(name);
+}
+
+void UMLObject::slotSetStereotype(QString _type)
+{
+  setStereotype(_type);
+}
+
+void UMLObject::slotSetPackage(QString _name)
+{
+  setPackage(_name);
+}
+
+void UMLObject::slotSetVisibility(Uml::Visibility _visibility)
+{
+  setVisibility(_visibility);
+}
+
+
+void UMLObject::slotSetDoc(QString _doc)
+{
+  setDoc(_doc);
+}
+
 #include "umlobject.moc"

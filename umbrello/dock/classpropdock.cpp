@@ -121,8 +121,6 @@ ClassPropDock::ClassPropDock(QWidget *parent, ObjectWidget *o)
     m_pDoc = UMLApp::app()->document();
 
     setupGeneralPage();
-    /*setupColorPage();
-    setupFontPage();*/
 
     connect(this,SIGNAL(okClicked()),this,SLOT(slotOk()));
     connect(this,SIGNAL(applyClicked()),this,SLOT(slotApply()));
@@ -136,8 +134,6 @@ void ClassPropDock::setObjectWidget(ObjectWidget *o) {
     m_pDoc = UMLApp::app()->document();
     //setupPages();//TODO ELV
     setupGeneralPage();
-    /*setupColorPage();
-    setupFontPage();*/
   }
 }
 
@@ -175,10 +171,6 @@ ClassPropDock::ClassPropDock(QWidget *parent, UMLWidget *w)
     if (w->baseType() == Uml::wt_Class || w->baseType() == Uml::wt_Interface) {
         setupDisplayPage();
     }
-    /*setupColorPage();
-    setupFontPage();*/
-    connect(this,SIGNAL(okClicked()),this,SLOT(slotOk()));
-    connect(this,SIGNAL(applyClicked()),this,SLOT(slotApply()));
 }
 
 void ClassPropDock::setUMLWidget(UMLWidget *w) {
@@ -209,9 +201,6 @@ void ClassPropDock::setUMLWidget(UMLWidget *w) {
         updatePages();
     }
     
-     
-    /*setupColorPage();
-    setupFontPage();*/
   }
 }
 
@@ -220,11 +209,6 @@ void ClassPropDock::setUMLWidget(UMLWidget *w) {
 void ClassPropDock::init()
 {
     setCaption( i18n("Properties") );
-    //setButtons( Ok | Apply | Cancel | Help ); //TODO ELV
-    //setDefaultButton( Ok );
-    //setModal( true );
-    //showButtonSeparator( true );
-    //setFaceType( QDockWidget::List );
     m_pGenPage = 0;
     m_pAttPage = 0;
     m_pOpsPage = 0;
@@ -310,15 +294,13 @@ void ClassPropDock::setupPages(bool assoc)
     setupEntityConstraintsPage();
     setupContentsPage();
     setupAssociationsPage();
+    setupDisplayPage();
         
-    //setupColorPage(); //TODO ELV
-    //setupFontPage(); //TODO ELV
-        
-    if (m_pWidget) {
+    /*if (m_pWidget) {
       if (m_pWidget->baseType() == Uml::wt_Class || m_pWidget->baseType() == Uml::wt_Interface) {
           setupDisplayPage();
       }
-    }
+    }*/
 }
 
 void ClassPropDock::updatePages()
@@ -334,17 +316,15 @@ void ClassPropDock::updatePages()
       m_pAssocTab->setObject(m_pObject, UMLApp::app()->currentView());
     }
     
+    if (m_pWidget) {
+      if (m_pWidget->baseType() == Uml::wt_Class || m_pWidget->baseType() == Uml::wt_Interface) {
+          //setupDisplayPage(); //TODO ELV
+      }
+    }
+    
     if (m_pObject)
       setWindowTitle(m_pObject->name());
 }
-
-/*QFrame* ClassPropDock::createPage(const QString& name, const QString& header, Icon_Utils::Icon_Type icon)
-{
-    QFrame* page = new QFrame();
-    //pageItem->setHeader( header );//TODO ELV
-    m_pTabWidget->addTab(page,name);
-    return page;
-}*/
 
 /**
  * Sets up the page "General" for the component.
@@ -353,15 +333,6 @@ void ClassPropDock::setupGeneralPage()
 {
     m_pGenPage = new ClassGenTab(m_pDoc, m_pTabWidget, m_pObject);
     m_pTabWidget->addTab(m_pGenPage,i18n("General Settings"));
-}
-
-/**
- * Sets up the page "Color" for the component.
- */
-void ClassPropDock::setupColorPage()
-{
-    m_pColorPage = new UMLWidgetColorPage(m_pTabWidget, m_pWidget);
-    m_pTabWidget->addTab(m_pColorPage,i18n("Colors"));
 }
 
 /**
@@ -457,22 +428,6 @@ void ClassPropDock::setupInstancePages()
     m_pGenPage = new ClassGenTab(m_pDoc, m_pTabWidget, m_pWidget);
     m_pTabWidget->addTab(m_pGenPage,i18nc("instance general settings page name", "General"));
     m_pAssocTab = 0;
-}
-
-/**
- * Sets up the font page.
- */
-void ClassPropDock::setupFontPage()
-{
-    if ( !m_pWidget ) {
-        return;
-    }
-    KVBox* page = new KVBox();
-    //pageItem->setHeader( i18n("Font Settings") );//TODO ELV
-
-    m_pTabWidget->addTab(page,i18n("Font"));
-    m_pChooser = new KFontChooser( (QWidget*)page, false, QStringList(), false);
-    m_pChooser->setFont( m_pWidget->font() );
 }
 
 #include "classpropdock.moc"

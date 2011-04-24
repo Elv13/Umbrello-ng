@@ -33,6 +33,7 @@ class UMLViewImageExporterAll;
 class RefactoringAssistant;
 class KPlayerPopupSliderAction;
 class XhtmlGenerator;
+class StatusBarToolButton;
 
 // KDE forward declarations
 class KActionMenu;
@@ -57,6 +58,7 @@ class QUndoCommand;
 class QUndoView;
 class QSLider;
 class QSplitter;
+class QPushButton;
 
 /**
  * The base class for UML application windows. It sets up the main
@@ -390,6 +392,15 @@ private:
     int m_activeView;
 
     /**
+     * Statusbar items
+     */
+    QPushButton* m_pZoomOutPB;
+    QPushButton* m_pZoomInPB;
+    StatusBarToolButton* m_pZoomFitSBTB;
+    StatusBarToolButton* m_pZoomFullSBTB;
+    QSlider* m_pZoomSlider;
+    
+    /**
      * Layout supports the dynamic management of the diagram representation (tabbed/stacked)
      * if tabbed diagrams is enabled it contains m_tabWidget
      * if tabbed diagrams is disabled it contains m_viewStack
@@ -409,7 +420,6 @@ private:
 
     KUndoStack* m_pUndoStack;  ///< UndoStack used to store actions, to provide Undo/Redo feature.
     
-    QSlider* m_pZoomSlider;
 
     bool m_hasBegunMacro;  ///< Macro creation flag.
 

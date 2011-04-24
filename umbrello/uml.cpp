@@ -25,6 +25,7 @@
 #include "cmds.h"
 #include "umbrellosettings.h"
 #include "statusbartoolbutton.h"
+#include "umlholder.h"
 // code generation
 #include "codegenerator.h"
 #include "codegenerationpolicy.h"
@@ -664,27 +665,27 @@ void UMLApp::initStatusBar()
     zoomLayout->setContentsMargins(0,0,0,0);
     zoomLayout->setSpacing(0);
     
-    StatusBarToolButton* zoomFitTB = new StatusBarToolButton(this);
-    zoomFitTB->setText("Fit");
-    zoomFitTB->setGroupPosition(StatusBarToolButton::GroupLeft);
-    zoomLayout->addWidget(zoomFitTB);
-    zoomFitTB->setContentsMargins(0,0,0,0);
+    m_pZoomFitSBTB = new StatusBarToolButton(this);
+    m_pZoomFitSBTB->setText("Fit");
+    m_pZoomFitSBTB->setGroupPosition(StatusBarToolButton::GroupLeft);
+    zoomLayout->addWidget(m_pZoomFitSBTB);
+    m_pZoomFitSBTB->setContentsMargins(0,0,0,0);
     
-    StatusBarToolButton* zoomFullTB = new StatusBarToolButton(this);
-    zoomFullTB->setText("100%");
-    zoomFullTB->setGroupPosition(StatusBarToolButton::GroupRight);
-    zoomFullTB->setContentsMargins(0,0,0,0);
-    zoomLayout->addWidget(zoomFullTB);
-    connect(zoomFullTB, SIGNAL( triggered( bool ) ), this, SLOT( slotZoom100() ));
+    m_pZoomFullSBTB = new StatusBarToolButton(this);
+    m_pZoomFullSBTB->setText("100%");
+    m_pZoomFullSBTB->setGroupPosition(StatusBarToolButton::GroupRight);
+    m_pZoomFullSBTB->setContentsMargins(0,0,0,0);
+    zoomLayout->addWidget(m_pZoomFullSBTB);
+    connect(m_pZoomFullSBTB, SIGNAL( triggered( bool ) ), this, SLOT( slotZoom100() ));
     
     statusBar()->addPermanentWidget(defaultZoomWdg);
     
-    QPushButton* zoomOutTB = new QPushButton(this);
-    zoomOutTB->setIcon(KIcon("zoom-out"));
-    zoomOutTB->setFlat(true);
-    zoomOutTB->setMaximumSize(30,30);
-    statusBar()->addPermanentWidget(zoomOutTB);
-    connect(zoomOutTB, SIGNAL( clicked() ), this, SLOT( slotZoomOut() ));
+    m_pZoomOutPB = new QPushButton(this);
+    m_pZoomOutPB->setIcon(KIcon("zoom-out"));
+    m_pZoomOutPB->setFlat(true);
+    m_pZoomOutPB->setMaximumSize(30,30);
+    statusBar()->addPermanentWidget(m_pZoomOutPB);
+    connect(m_pZoomOutPB, SIGNAL( clicked() ), this, SLOT( slotZoomOut() ));
     
     m_pZoomSlider = new QSlider(Qt::Horizontal, this);
     m_pZoomSlider->setMaximumSize(100,50);
@@ -696,12 +697,12 @@ void UMLApp::initStatusBar()
     
     statusBar()->addPermanentWidget(m_pZoomSlider);
     
-    QPushButton* zoomInTB = new QPushButton(this);
-    zoomInTB->setIcon(KIcon("zoom-in"));
-    zoomInTB->setFlat(true);
-    zoomInTB->setMaximumSize(30,30);
-    statusBar()->addPermanentWidget(zoomInTB);
-    connect(zoomInTB, SIGNAL( clicked() ), this, SLOT( slotZoomIn() )); //TODO ELV add to .h
+    m_pZoomInPB = new QPushButton(this);
+    m_pZoomInPB->setIcon(KIcon("zoom-in"));
+    m_pZoomInPB->setFlat(true);
+    m_pZoomInPB->setMaximumSize(30,30);
+    statusBar()->addPermanentWidget(m_pZoomInPB);
+    connect(m_pZoomInPB, SIGNAL( clicked() ), this, SLOT( slotZoomIn() ));
 
 }
 
@@ -725,7 +726,6 @@ void UMLApp::initView()
     m_viewStack = new QStackedWidget(this);
     
     m_mainSplitter = new QSplitter(this);
-    //m_mainSplitter->addWidget(new QPushButton(this,"test")); //TODO ELV
     m_layout->addWidget(m_mainSplitter);
 
     // Prepare Tabbed Diagram Representation
@@ -2626,7 +2626,11 @@ void UMLApp::setCurrentView(UMLView* view)
     if (optionState.generalState.tabdiagrams) {
         int tabIndex = m_tabWidgets[0]->indexOf(view);
         if ((tabIndex < 0) && view->isOpen()) {
-            tabIndex = m_tabWidgets[0]->addTab(view, view->getName());
+//             UmlHolder* anUmlHolder = new UmlHolder(m_tabWidgets[0],m_tabWidgets[0]);
+//             anUmlHolder->setView(view);
+//             connect(m_tabWidgets[0],SIGNAL(currentChanged(int)),anUmlHolder,SLOT(slotTabChanged(int)));
+//             tabIndex = m_tabWidgets[0]->addTab(anUmlHolder, view->getName());
+            tabIndex = m_tabWidgets[0]->addTab(view, view->getName()); //TODO ELV
             m_tabWidgets[0]->setTabIcon(tabIndex, Icon_Utils::iconSet(view->getType()));
             m_tabWidgets[0]->setTabToolTip(tabIndex, view->getName());
         }

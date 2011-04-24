@@ -358,6 +358,9 @@ set (libwidgets_SRCS
     widgets/widgetbase.cpp
     widgets/statusbartoolbutton.cpp
     widgets/compactCombo.cpp
+    widgets/umlholder.cpp
+    widgets/rowwidgetpopupbase.cpp
+    widgets/paramwidget.cpp
 )
 
 set (libcontroller_SRCS

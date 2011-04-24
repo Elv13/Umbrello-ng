@@ -45,7 +45,7 @@ void pGuiModel::connectSlots()
   //connect(QTableWidgetItem* initial, SIGNAL(  ), this, SLOT(  ) );
   //connect(QTableWidgetItem* defaultValue, SIGNAL(  ), this, SLOT(  ) );
   if (parameters)
-    connect(parameters, SIGNAL( clicked(bool) ), this, SLOT( parametersChanged(bool) ) );
+    connect(parameters, SIGNAL( paramClicked() ), this, SLOT( parametersChanged() ) );
   if (type)
     connect(type, SIGNAL( editTextChanged(QString) ), this, SLOT( typeChanged(QString) ) );
   if (visibility)
@@ -71,7 +71,7 @@ void pGuiModel::connectSlots()
 }
 
 
-void pGuiModel::parametersChanged(bool)
+void pGuiModel::parametersChanged()
 {
   if (!m_pIsModified) {
     emit(addNew());
@@ -289,19 +289,7 @@ void pGuiModel::reload()
     
       if (parameters) {
         if (qobject_cast<UMLOperation*>(classifier)) {
-          QString newText;
-          UMLAttributeList paramList = qobject_cast<UMLOperation*>(classifier)->getParmList();
-          if (paramList.size()) {
-            parameters->setStyleSheet("text-align:left;");
-            parameters->setFlat(true);
-          }
-          foreach (UMLAttribute* attr, paramList) {
-            newText += attr->getTypeName() + " " + attr->name();
-            if (!(attr->getInitialValue().isEmpty()))
-              newText += "(" + attr->getInitialValue() + ")";
-            newText +=", ";
-          }
-          parameters->setText(newText);
+          parameters->setParam(qobject_cast<UMLOperation*>(classifier));
         }
       }
       

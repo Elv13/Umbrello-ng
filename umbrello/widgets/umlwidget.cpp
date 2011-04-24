@@ -642,7 +642,7 @@ void UMLWidget::adjustUnselectedAssocs(int x, int y)
             assocwidget->widgetMoved(this, x, y);
     }
 }
-#include <QDebug> //TODO ELV
+
 void UMLWidget::showProperties()
 {
     // will already be selected so make sure docWindow updates the doc

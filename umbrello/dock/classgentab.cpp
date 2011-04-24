@@ -51,7 +51,7 @@ ClassGenTab::ClassGenTab(UMLDoc* d, QWidget* parent, UMLObject* o)
     m_pDocGB (0),m_pInfGB(0), m_pNameL (0), m_pInstanceL (0), m_pStereoTypeL (0), m_pPackageL (0), m_pVisibilityL (0), m_pClassNameLE (0), 
     m_pInstanceLE (0), m_pPackageLE (0), m_pStereoTypeCB (0), m_pPackageCB (0), m_pVisibility (0), m_pMultiCB (0), m_pDrawActorCB (0), 
     m_pAbstractCB (0), m_pDeconCB (0), m_pDoc (0), m_pDrawAsGB (0), m_pDefaultRB (0), m_pFileRB (0), m_pLibraryRB (0), m_pTableRB (0), 
-    m_pExecutableCB (0)
+    m_pExecutableCB (0),m_pBorderL(0),m_pBorderColor(0),m_pBackgroundL(0),m_pBackgroundColor(0),m_pFontL(0),m_pFontCombo(0)
 {
     m_pUmldoc = UMLApp::app()->document();
 
@@ -64,7 +64,7 @@ ClassGenTab::ClassGenTab(UMLDoc* d, QWidget* parent, ObjectWidget* o)
     m_pDocGB (0),m_pInfGB(0), m_pNameL (0), m_pInstanceL (0), m_pStereoTypeL (0), m_pPackageL (0), m_pVisibilityL (0), m_pClassNameLE (0), 
     m_pInstanceLE (0), m_pPackageLE (0), m_pStereoTypeCB (0), m_pPackageCB (0), m_pVisibility (0), m_pMultiCB (0), m_pDrawActorCB (0), 
     m_pAbstractCB (0), m_pDeconCB (0), m_pDoc (0), m_pDrawAsGB (0), m_pDefaultRB (0), m_pFileRB (0), m_pLibraryRB (0), m_pTableRB (0), 
-    m_pExecutableCB (0)
+    m_pExecutableCB (0),m_pBorderL(0),m_pBorderColor(0),m_pBackgroundL(0),m_pBackgroundColor(0),m_pFontL(0),m_pFontCombo(0)
 {
     m_pUmldoc = UMLApp::app()->document();
     
@@ -77,7 +77,7 @@ ClassGenTab::ClassGenTab(UMLDoc* d, QWidget* parent, UMLWidget* widget)
     m_pDocGB (0),m_pInfGB(0), m_pNameL (0), m_pInstanceL (0), m_pStereoTypeL (0), m_pPackageL (0), m_pVisibilityL (0), m_pClassNameLE (0), 
     m_pInstanceLE (0), m_pPackageLE (0), m_pStereoTypeCB (0), m_pPackageCB (0), m_pVisibility (0), m_pMultiCB (0), m_pDrawActorCB (0), 
     m_pAbstractCB (0), m_pDeconCB (0), m_pDoc (0), m_pDrawAsGB (0), m_pDefaultRB (0), m_pFileRB (0), m_pLibraryRB (0), m_pTableRB (0), 
-    m_pExecutableCB (0)
+    m_pExecutableCB (0),m_pBorderL(0),m_pBorderColor(0),m_pBackgroundL(0),m_pBackgroundColor(0),m_pFontL(0),m_pFontCombo(0)
 {
     m_pUmldoc = UMLApp::app()->document();
     
@@ -90,7 +90,7 @@ ClassGenTab::~ClassGenTab()
 {
 }
 
-void ClassGenTab::setObject(UMLObject * o) //TODO ELV, update widgets instead of makeing new all over again
+void ClassGenTab::setObject(UMLObject * o)
 {
   if (m_Type != pt_Object) {
     resetTab();
@@ -148,16 +148,25 @@ void ClassGenTab::setObject(UMLObject * o) //TODO ELV, update widgets instead of
         break;
     }    
     
-    m_pInfGB = new QGroupBox(this);
+    if (!m_pInfGB)
+      m_pInfGB = new QGroupBox(this);
+    else
+      m_pInfGB->disconnect();
     m_pInfGB->setTitle(i18n("General informations"));
     topLayout->addWidget(m_pInfGB);
     
     QFormLayout * formLayout = new QFormLayout(m_pInfGB);
     
-    m_pNameL = new QLabel(this);
+    if (!m_pNameL)
+       m_pNameL = new QLabel(this);
+    else
+      m_pNameL->disconnect();
     m_pNameL->setText(name);
 
-    m_pClassNameLE = new KLineEdit(this);
+    if (!m_pClassNameLE)
+       m_pClassNameLE = new KLineEdit(this);
+    else
+      m_pClassNameLE->disconnect();
     m_pClassNameLE->setFocus();
     m_pNameL->setBuddy(m_pClassNameLE);
     formLayout->addRow(m_pNameL,m_pClassNameLE);
@@ -167,9 +176,15 @@ void ClassGenTab::setObject(UMLObject * o) //TODO ELV, update widgets instead of
     m_pAbstractCB = 0;
     m_pDeconCB = 0;
 
-    m_pStereoTypeL = new QLabel(i18n("&Stereotype name:"), this);
+    if (!m_pStereoTypeL)
+       m_pStereoTypeL = new QLabel(i18n("&Stereotype name:"), this);
+    else
+      m_pStereoTypeL->disconnect();
 
-    m_pStereoTypeCB = new KComboBox(true, this);
+    if (!m_pStereoTypeCB)
+       m_pStereoTypeCB = new KComboBox(true, this);
+    else
+      m_pStereoTypeCB->disconnect();
     formLayout->addRow(m_pStereoTypeL,m_pStereoTypeCB);
 
     //m_pStereoTypeCB->setItemText( m_pStereoTypeCB->currentIndex(), o->stereotype() ); //TODO ELV
@@ -179,13 +194,17 @@ void ClassGenTab::setObject(UMLObject * o) //TODO ELV, update widgets instead of
         m_pStereoTypeCB->setEditable(false);
     }
 
-    //if (t == Uml::ot_Class || t == Uml::ot_Interface) { //TODO ELV
-        m_pPackageL = new QLabel(i18n("Package name:"), this);
-        //m_pNameLayout->addWidget(m_pPackageL, 2, 0);
+    if (t == Uml::ot_Class || t == Uml::ot_Interface) {
+        if (!m_pPackageL)
+          m_pPackageL = new QLabel(i18n("Package name:"), this);
+        else
+          m_pPackageL->disconnect();
 
-        m_pPackageCB = new KComboBox(this);
+        if (!m_pPackageCB)
+          m_pPackageCB = new KComboBox(this);
+        else
+          m_pPackageCB->disconnect();
         m_pPackageCB->setEditable(true);
-        //m_pNameLayout->addWidget(m_pPackageCB, 2, 1);
 
         formLayout->addRow(m_pPackageL,m_pPackageCB);
         
@@ -196,15 +215,7 @@ void ClassGenTab::setObject(UMLObject * o) //TODO ELV, update widgets instead of
         }
         packages.sort();
         m_pPackageCB->insertItems(-1, packages);
-        //UMLPackage* parentPackage = o->umlPackage(); //TODO ELV
-
-        // if parent package == NULL
-        // or if the parent package is the Logical View folder
-        /*if ( parentPackage == NULL || parentPackage== static_cast<UMLPackage*>(m_pUmldoc->rootFolder(Uml::mt_Logical)))
-            m_pPackageCB->setEditText( QString() );
-        else
-            m_pPackageCB->setEditText(parentPackage->name());*///TODO ELV
-    //}//TODO ELV
+    }
 
     if (t == Uml::ot_Class || t == Uml::ot_UseCase ) {
         QString abstractCaption;
@@ -213,7 +224,7 @@ void ClassGenTab::setObject(UMLObject * o) //TODO ELV, update widgets instead of
         } else {
             abstractCaption = i18n("A&bstract use case");
         }
-        m_pAbstractCB = new QCheckBox( abstractCaption, this );
+        m_pAbstractCB = new QCheckBox( abstractCaption, this ); //TODO ELV dead code?
         m_pAbstractCB->setChecked( o->isAbstract() );
     }
 
@@ -222,7 +233,7 @@ void ClassGenTab::setObject(UMLObject * o) //TODO ELV, update widgets instead of
         m_pExecutableCB->setChecked( (static_cast<UMLComponent*>(o))->getExecutable() );
     }
 
-    if (t == Uml::ot_Artifact) {
+    if (t == Uml::ot_Artifact) { //TODO ELV port
         // setup artifact draw as
         m_pDrawAsGB = new QGroupBox(i18n("Draw As"), this);
         QHBoxLayout* drawAsLayout = new QHBoxLayout(m_pDrawAsGB);
@@ -257,67 +268,73 @@ void ClassGenTab::setObject(UMLObject * o) //TODO ELV, update widgets instead of
 
     // setup scope
     
-    m_pVisibilityL = new QLabel(this);
+    if (!m_pVisibilityL)
+       m_pVisibilityL = new QLabel(this);
+    else
+      m_pVisibilityL->disconnect();
     m_pVisibilityL->setText(i18n("Visibility:"));
     
-    m_pVisibility = new KComboBox(this);
+    if (!m_pVisibility)
+       m_pVisibility = new KComboBox(this);
+    else
+      m_pVisibility->disconnect();
     QStringList visibility;
     visibility << i18n("P&ublic") << i18n("P&rivate") << i18n("Pro&tected") << i18n("Imple&mentation");
     m_pVisibility->addItems(visibility);
     QHBoxLayout * scopeLayout = new QHBoxLayout(this);
-    //topLayout->addWidget(m_pVisibility);
     formLayout->addRow(m_pVisibilityL,m_pVisibility);
-    /*m_pButtonGB = new QGroupBox(i18n("Visibility"), this);
-    scopeLayout->setMargin(margin);
-
-    m_pPublicRB = new QRadioButton(, m_pButtonGB);
-
-    m_pPrivateRB = new QRadioButton(, m_pButtonGB);
-    scopeLayout->addWidget(m_pPrivateRB);
-
-    m_pProtectedRB = new QRadioButton(, m_pButtonGB);
-    scopeLayout->addWidget(m_pProtectedRB);
-    topLayout->addWidget(m_pButtonGB);
-
-    m_pImplementationRB = new QRadioButton(, m_pButtonGB);
-    scopeLayout->addWidget(m_pImplementationRB);
-    topLayout->addWidget(m_pButtonGB);*/
     
     //if (m_pInstanceWidget) {
-    m_pBorderL = new QLabel(this);
+    if (!m_pBorderL)
+       m_pBorderL = new QLabel(this);
     m_pBorderL->setText(i18n("Border:"));
     m_pBorderL->setVisible(false);
     
-    m_pBorderColor = new KColorButton(this);
+    if (!m_pBorderColor)
+       m_pBorderColor = new KColorButton(this);
+    else
+      m_pBorderColor->disconnect();
     m_pBorderColor->setVisible(false);
     formLayout->addRow(m_pBorderL,m_pBorderColor);
     
-    m_pBackgroundL = new QLabel(this);
+    if (!m_pBackgroundL)
+       m_pBackgroundL = new QLabel(this);
     m_pBackgroundL->setText(i18n("Background:"));
     m_pBackgroundL->setVisible(false);
     
-    m_pBackgroundColor = new KColorButton(this);
+    if (!m_pBackgroundColor)
+       m_pBackgroundColor = new KColorButton(this);
+    else
+      m_pBackgroundColor->disconnect();
     m_pBackgroundColor->setVisible(false);
     formLayout->addRow(m_pBackgroundL,m_pBackgroundColor);
     
-    m_pFontL = new QLabel(this);
+    if (!m_pFontL)
+       m_pFontL = new QLabel(this);
     m_pFontL->setText(i18n("Font:"));
     m_pFontL->setVisible(false);
     
-    m_pFontCombo = new KFontComboBox();
+    if (!m_pFontCombo)
+       m_pFontCombo = new KFontComboBox();
+    else
+      m_pFontCombo->disconnect();
     m_pFontCombo->setVisible(false);
     
     formLayout->addRow(m_pFontL,m_pFontCombo);
     //}
 
     // setup documentation
-    m_pDocGB = new QGroupBox(this);
+    if (!m_pDocGB)
+       m_pDocGB = new QGroupBox(this);
     QHBoxLayout * docLayout = new QHBoxLayout(m_pDocGB);
     m_pDocGB->setTitle(i18n("Documentation"));
     
 
 
-    m_pDoc = new KTextEdit(m_pDocGB);
+    if (!m_pDoc)
+       m_pDoc = new KTextEdit(m_pDocGB);
+    else
+      m_pDoc->disconnect();
     docLayout->addWidget(m_pDoc);
     topLayout->addWidget(m_pDocGB);
 
@@ -336,6 +353,7 @@ void ClassGenTab::setObject(UMLObject * o) //TODO ELV, update widgets instead of
   
   if (o) {
     m_pClassNameLE->setText(o->name());
+    connect(m_pClassNameLE,SIGNAL(textChanged(QString)),o,SLOT(slotSetName(QString)));
     
     if (o->visibility() == Uml::Visibility::Implementation)
       m_pVisibility->setCurrentIndex(3); //TODO ELV find why only Uml::Visibility::FromParent -need- to be "3"
@@ -345,17 +363,31 @@ void ClassGenTab::setObject(UMLObject * o) //TODO ELV, update widgets instead of
       m_pVisibility->setCurrentIndex(Uml::Visibility::Private);
     else if (o->visibility() == Uml::Visibility::Protected)
       m_pVisibility->setCurrentIndex(Uml::Visibility::Protected);
+    //connect(m_pClassNameLE,SIGNAL(textChanged(QString)),o,SLOT(slotSetName(QString))); //TODO ELV
     
     m_pStereoTypeCB->lineEdit()->setText(o->stereotype());
+    connect(m_pStereoTypeCB->lineEdit(),SIGNAL(textChanged(QString)),o,SLOT(slotSetStereotype(QString)));
     
-    m_pPackageCB->lineEdit()->setText(o->package()); //TODO ELV connect everything
+    if (m_pPackageCB) {
+      m_pPackageCB->lineEdit()->setText(o->package());
+      //UMLPackage* parentPackage = o->umlPackage(); //TODO ELV still needed?
+
+      // if parent package == NULL
+      // or if the parent package is the Logical View folder
+      /*if ( parentPackage == NULL || parentPackage== static_cast<UMLPackage*>(m_pUmldoc->rootFolder(Uml::mt_Logical)))
+          m_pPackageCB->setEditText( QString() );
+      else
+          m_pPackageCB->setEditText(parentPackage->name());*/
+      connect(m_pPackageCB->lineEdit(),SIGNAL(textChanged(QString)),o,SLOT(slotSetPackage(QString)));
+    }
     
     // setup fields
-    m_pDoc->setText(o->doc());//TODO ELV
+    m_pDoc->setText(o->doc());
+    connect(m_pDoc,SIGNAL(textChanged(QString)),o,SLOT(slotSetDoc(QString))); //TODO ELV dont work
   }
 }
 
-void ClassGenTab::setObjectWidget(ObjectWidget *o)
+void ClassGenTab::setObjectWidget(ObjectWidget *o) //TODO ELV port/dead code
 {
   if (m_Type != pt_ObjectWidget) {
     resetTab();

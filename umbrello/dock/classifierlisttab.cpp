@@ -45,11 +45,8 @@
 #include <QtGui/QLineEdit>
 #include <QtGui/QToolButton>
 
-//TODO ELV
-//BEGIN
 #include <QtGui/QTableWidget>
 #include <QtGui/QTableWidgetItem>
-//END
 
 using namespace Uml;
 
@@ -88,7 +85,6 @@ ClassifierListTab::~ClassifierListTab()
  */
 void ClassifierListTab::setClassifier(UMLClassifier* classifier)
 {
-  qDebug() << "In setClassifier"; //TODO ELV
   if (m_pClassifier != classifier) {
     m_pClassifier = classifier;
     reloadItemListBox();
@@ -103,12 +99,11 @@ void ClassifierListTab::setupPage()
 
     //main layout contains our two group boxes, the list and the documentation
     QVBoxLayout* mainLayout = new QVBoxLayout( this );
-    mainLayout->setSpacing(10);
     
     m_centralTableTW = new QTableWidget(this);
     mainLayout->addWidget(m_centralTableTW);
     m_centralTableTW->verticalHeader()->setVisible(false);
-    m_centralTableTW->setSelectionBehavior(QAbstractItemView::SelectRows); //TODO ELV dont work
+    m_centralTableTW->setSelectionBehavior(QAbstractItemView::SelectRows);
     connect(m_centralTableTW, SIGNAL(cellChanged(int,int)), this, SLOT(itemChanged(int, int)));
     m_centralTableTW->setRowCount(0);
     
@@ -116,27 +111,14 @@ void ClassifierListTab::setupPage()
     setupListGroup(0);
     
     connect(addRow(),SIGNAL(addNew()),this,SLOT(addEmtpyRow()));
-    
-    mainLayout->addWidget(m_pItemListGB);
 
-    setupDocumentationGroup(0);
-    mainLayout->addWidget(m_pDocGB);
+    //setupDocumentationGroup(0);
+    //mainLayout->addWidget(m_pDocGB);
 
     reloadItemListBox();
 
     //enableWidgets(false);//disable widgets until an att is chosen //TODO ELV No longer needed?
     m_pOldListItem = 0;
-
-    connect(m_pItemListLB, SIGNAL(currentItemChanged(QListWidgetItem*, QListWidgetItem*)), this, SLOT(slotActivateItem(QListWidgetItem*)));
-    connect(m_pItemListLB, SIGNAL(itemDoubleClicked( QListWidgetItem*)), this, SLOT(slotDoubleClick(QListWidgetItem*)));
-    connect(m_pItemListLB, SIGNAL(customContextMenuRequested(const QPoint&)), this, SLOT(slotRightButtonPressed(const QPoint&)));
-
-    connect(m_pDoc, SIGNAL(sigObjectCreated(UMLObject*)), this, SLOT(slotListItemCreated(UMLObject*)));
-
-    connect(m_pTopArrowB, SIGNAL( clicked() ), this, SLOT( slotTopClicked() ) );
-    connect(m_pUpArrowB, SIGNAL( clicked() ), this, SLOT( slotUpClicked() ) );
-    connect(m_pDownArrowB, SIGNAL( clicked() ), this, SLOT( slotDownClicked() ) );
-    connect(m_pBottomArrowB, SIGNAL( clicked() ), this, SLOT( slotBottomClicked() ) );
 }
 
 /**
@@ -315,14 +297,14 @@ void ClassifierListTab::setupActionButtons(const QString& itemType, QVBoxLayout*
  * Sets up the documentation group.
  * @param margin  The margin of the group.
  */
-void ClassifierListTab::setupDocumentationGroup(int margin)
+void ClassifierListTab::setupDocumentationGroup(int margin) //TODO ELV dead code
 {
-    m_pDocGB = new QGroupBox(i18n("Documentation"), this);
-    m_pDocGB->setVisible(false);
-    QVBoxLayout* docLayout = new QVBoxLayout(m_pDocGB);
-    docLayout->setSpacing(10);
-    docLayout->setMargin(margin);
-    if (m_itemType == ot_Operation) {
+    //m_pDocGB = new QGroupBox(i18n("Documentation"), this);
+    //m_pDocGB->setVisible(false);
+    //QVBoxLayout* docLayout = new QVBoxLayout(m_pDocGB);
+    //docLayout->setSpacing(10);
+    //docLayout->setMargin(margin);
+    /*if (m_itemType == ot_Operation) {
         m_pDocTE = new KTextEdit();
         //m_pCodeTE = new CodeTextEdit(); //TODO ELV
         KTabWidget* tabWidget = new KTabWidget();
@@ -333,7 +315,7 @@ void ClassifierListTab::setupDocumentationGroup(int margin)
     else {
         m_pDocTE = new KTextEdit();
         docLayout->addWidget(m_pDocTE);
-    }
+    }*/
 }
 
 /**
@@ -399,26 +381,9 @@ pGuiModel* ClassifierListTab::addRow()
         //connect(nameWidget,SIGNAL(destroyed(QObject*)),aRow,SLOT(destroyTableItem(QObject*)));
         pGuiModel::linker[nameWidget] = aRow;
         
-        QPushButton* paramPb = new QPushButton(this);
-        paramPb->setFlat(true);
-        paramPb->setMinimumSize(0,0);
-        paramPb->setContentsMargins(0,0,0,0);
-        paramPb->setSizePolicy(QSizePolicy(QSizePolicy::Minimum,QSizePolicy::Preferred));
-        aRow->parameters = paramPb;
-        
-        QToolButton* addParamPb = new QToolButton(this);
-        addParamPb->setIcon(KIcon("list-add"));
-        addParamPb->setToolTip("Add a new parameter");
-        aRow->addParameters = addParamPb;
-        
-        QWidget* paramWdg = new QWidget(this);
-        paramWdg->setContentsMargins(0,0,0,0);
-        paramWdg->setSizePolicy(QSizePolicy(QSizePolicy::Minimum,QSizePolicy::Preferred));
-        QHBoxLayout* paramLayout = new QHBoxLayout(paramWdg);
-        paramLayout->setContentsMargins(0,0,0,0);
-        paramLayout->addWidget(paramPb);
-        paramLayout->addWidget(addParamPb);
+        ParamWidget* paramWdg = new ParamWidget(this);
         m_centralTableTW->setCellWidget(m_rowCount,1,paramWdg);
+        aRow->parameters = paramWdg;
         
         CompactCombo* typeCbb = new CompactCombo(this);
         typeCbb->setEditable(true);
@@ -620,7 +585,7 @@ void ClassifierListTab::reloadItemListBox()
  */
 void ClassifierListTab::enableWidgets(bool state)
 {
-    m_pDocTE->setEnabled( state );
+    /*m_pDocTE->setEnabled( state ); //TODO ELV dead code
     if (m_itemType == ot_Operation) {
         m_pCodeTE->setEnabled( state );
     }
@@ -638,12 +603,6 @@ void ClassifierListTab::enableWidgets(bool state)
         m_pPropertiesButton->setEnabled(false);
         return;
     }
-    /*now check the order buttons.
-        Double check an item is selected
-        If only one item in list make sure they are disabled.
-        If at top item, only allow down arrow to be enabled.
-        If at bottom item, only allow up arrow to be enabled.
-    */
     int index = m_pItemListLB->currentRow();
     if ( m_pItemListLB->count() == 1 || index == -1 ) {
         m_pTopArrowB->setEnabled( false );
@@ -667,7 +626,7 @@ void ClassifierListTab::enableWidgets(bool state)
         m_pBottomArrowB->setEnabled( true );
     }
     m_pDeleteListItemButton->setEnabled(true);
-    m_pPropertiesButton->setEnabled(true);
+    m_pPropertiesButton->setEnabled(true);*/
 }
 
 /**
@@ -676,7 +635,7 @@ void ClassifierListTab::enableWidgets(bool state)
  */
 void ClassifierListTab::slotActivateItem(QListWidgetItem* item)
 {
-    //if not first time an item is highlighted
+    /*//if not first time an item is highlighted //TODO ELV dead code
     //save old highlighted item first
     if (m_pOldListItem) {
         m_pOldListItem->setDoc( m_pDocTE->toPlainText() );
@@ -720,7 +679,7 @@ void ClassifierListTab::slotActivateItem(QListWidgetItem* item)
         }
         enableWidgets(true);
         m_pOldListItem = listItem;
-    }
+    }*/
 }
 
 /**
@@ -736,7 +695,7 @@ void ClassifierListTab::updateObject()
 
 void ClassifierListTab::slotListItemCreated(UMLObject* object)
 {
-    if (!m_bSigWaiting) {
+    /*if (!m_bSigWaiting) { //TODO ELV dead code
         return;
     }
     UMLClassifierListItem *listItem = dynamic_cast<UMLClassifierListItem*>(object);
@@ -763,12 +722,12 @@ void ClassifierListTab::slotListItemCreated(UMLObject* object)
         m_pItemListLB->setCurrentItem(m_pItemListLB->item(index));
         slotActivateItem(m_pItemListLB->item(index));
         connect( object, SIGNAL( modified() ), this, SLOT( slotListItemModified() ) );
-    }
+    }*/
 }
 
 void ClassifierListTab::slotListItemModified()
 {
-     if (!m_bSigWaiting) {
+    /*if (!m_bSigWaiting) { //TODO ELV dead code
          return;
     }
     UMLClassifierListItem* object = dynamic_cast<UMLClassifierListItem*>(sender());
@@ -777,7 +736,7 @@ void ClassifierListTab::slotListItemModified()
         item->setText(object->toString(Uml::st_SigNoVis));
         m_pItemListLB->setCurrentItem(item);
         m_bSigWaiting = false;
-    }
+    }*/
 }
 
 /**

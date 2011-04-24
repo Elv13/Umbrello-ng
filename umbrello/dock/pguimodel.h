@@ -12,6 +12,7 @@
 #include "classifierwidget.h"
 #include "classifierlistitem.h"
 #include "compactCombo.h"
+#include "paramwidget.h"
 
 class QPalette;
 
@@ -26,8 +27,9 @@ class pGuiModel : public QObject {
     QTableWidgetItem* initial;
     QTableWidgetItem* defaultValue;
     QTableWidgetItem* length;
-    QPushButton* parameters;
-    QToolButton* addParameters;
+    ParamWidget* parameters;
+    //QPushButton* parameters;
+    //QToolButton* addParameters;
     CompactCombo* type;
     KComboBox* visibility;
     KComboBox* attributes;
@@ -59,7 +61,7 @@ class pGuiModel : public QObject {
     void reload();
        
   private slots:
-      void parametersChanged(bool);
+      void parametersChanged();
       void typeChanged(QString);
       void visibilityChanged(int);
       void staticVChanged(int);

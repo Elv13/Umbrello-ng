@@ -67,7 +67,6 @@ protected slots:
 protected:
     void setupPages(bool assoc = false);
     void setupGeneralPage();
-    void setupColorPage();
     void setupDisplayPage();
     void setupAttributesPage();
     void setupOperationsPage();
@@ -78,7 +77,6 @@ protected:
     void setupContentsPage();
     void setupAssociationsPage();
     void setupInstancePages();
-    void setupFontPage();
 
 private:
     KFontChooser*        m_pChooser;
@@ -109,8 +107,6 @@ private:
 
 private:
     void init();
-
-    //QFrame* createPage(const QString& name, const QString& header, Icon_Utils::Icon_Type icon);
 
 };
 

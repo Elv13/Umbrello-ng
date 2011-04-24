@@ -120,6 +120,11 @@ public:
 public slots:
 
     void emitModified();
+    void slotSetName(QString name);
+    void slotSetStereotype(QString _type);
+    void slotSetPackage(QString _name);
+    void slotSetVisibility(Uml::Visibility _visibility);
+    void slotSetDoc(QString _doc);
 
 signals:
 
