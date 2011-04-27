@@ -361,6 +361,7 @@ set (libwidgets_SRCS
     widgets/umlholder.cpp
     widgets/rowwidgetpopupbase.cpp
     widgets/paramwidget.cpp
+    widgets/popupbutton.cpp
 )
 
 set (libcontroller_SRCS

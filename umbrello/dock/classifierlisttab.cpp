@@ -25,6 +25,7 @@
 #include "object_factory.h"
 #include "pguimodel.h"
 #include "compactCombo.h"
+#include "popupbutton.h"
 
 #include <kdebug.h>
 #include <kdialogbuttonbox.h>
@@ -326,7 +327,7 @@ pGuiModel* ClassifierListTab::addRow()
     m_centralTableTW->setRowCount(m_centralTableTW->rowCount()+1);
     QString typeName;
     QString newItemType;
-    pGuiModel* aRow = new pGuiModel;
+    pGuiModel* aRow = new pGuiModel(m_itemType, m_pClassifier);
     switch (m_itemType) {
     case ot_Attribute: {
         QTableWidgetItem* nameWidget = new QTableWidgetItem("");
@@ -365,10 +366,10 @@ pGuiModel* ClassifierListTab::addRow()
         m_centralTableTW->setCellWidget(m_rowCount,5,staticCb);
         aRow->staticV = staticCb;
         
-        QPushButton* docPb = new QPushButton(this);
+        PopupButton* docPb = new PopupButton(this);
         docPb->setText("Doc");
         m_centralTableTW->setCellWidget(m_rowCount,6,docPb);
-        aRow->documentation = docPb;
+        aRow->setDocumentation(docPb);
         
       }
       break;
@@ -416,15 +417,15 @@ pGuiModel* ClassifierListTab::addRow()
         m_centralTableTW->setCellWidget(m_rowCount,7,constCb);
         aRow->constV = constCb;
         
-        QPushButton* docPb = new QPushButton(this);
+        PopupButton* docPb = new PopupButton(this);
         docPb->setText("Doc");
         m_centralTableTW->setCellWidget(m_rowCount,8,docPb);
-        aRow->documentation = docPb;
+        aRow->setDocumentation(docPb);
         
-        QPushButton* sourcePb = new QPushButton(this);
+        PopupButton* sourcePb = new PopupButton(this);
         sourcePb->setText("Source");
         m_centralTableTW->setCellWidget(m_rowCount,9,sourcePb);
-        aRow->source = sourcePb;
+        aRow->setSource(sourcePb);
         
       }
       break;
@@ -519,10 +520,10 @@ pGuiModel* ClassifierListTab::addRow()
         m_centralTableTW->setCellWidget(m_rowCount,8,indexed);
         aRow->indexed = indexed;
         
-        QPushButton* docPb = new QPushButton(this);
+        PopupButton* docPb = new PopupButton(this);
         docPb->setText("Doc");
         m_centralTableTW->setCellWidget(m_rowCount,9,docPb);
-        aRow->documentation = docPb;
+        aRow->setDocumentation(docPb);
       }
       break;
     case ot_EntityConstraint:

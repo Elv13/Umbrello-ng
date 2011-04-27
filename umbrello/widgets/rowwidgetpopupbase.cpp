@@ -26,9 +26,19 @@ PopupPrivate::PopupPrivate(RowWidgetPopupBase* base) {
   }
 
 //Copied from QComboBox
-bool PopupPrivate::eventFilter(QObject *o, QEvent *e)
+bool PopupPrivate::eventFilter(QObject *obj, QEvent *event)
 {
-    switch (e->type()) {
+  if ((event->type() != 12) && (event->type() != 77) && (event->type() != 5) && (event->type() != 129))
+  qDebug() << "type: " << event->type();
+  if (event->type() == QEvent::FocusOut) {
+    if (!m_pBase->popupHasFocus()) {
+      m_pBase->hidePopup();
+      //exit(0);
+      return true;
+    }
+  }
+  return false;
+    /*switch (e->type()) {
     case QEvent::ShortcutOverride:
         switch (static_cast<QKeyEvent*>(e)->key()) {
         case Qt::Key_Enter:
@@ -63,7 +73,7 @@ bool PopupPrivate::eventFilter(QObject *o, QEvent *e)
     default:
         break;
     }
-    return QFrame::eventFilter(o, e);
+    return QFrame::eventFilter(obj, event);*/
 }
 
 RowWidgetPopupBase::RowWidgetPopupBase() : m_pPopup(0),m_pMinimumWidth(0),m_pVisible(0) {

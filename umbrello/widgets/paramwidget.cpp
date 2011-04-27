@@ -16,7 +16,7 @@
 
 
 ParamWidget::ParamWidget(QWidget* parent) : QWidget(parent),
-m_pParamPb(0), m_pAddParamPb(0), m_pLineName(0), m_pInOut(0), pInitVal(0), m_pDoc(0), m_pOkButton(0){
+m_pParamPb(0), m_pAddParamPb(0), m_pLineName(0), m_pInOut(0), m_pInitVal(0), m_pDoc(0), m_pOkButton(0){
   m_pParamPb = new QPushButton(this);
   m_pParamPb->setFlat(true);
   m_pParamPb->setMinimumSize(0,0);
@@ -63,10 +63,12 @@ void ParamWidget::initPopup()
   m_pLineName = new KLineEdit(0);
   m_pLineName->setContentsMargins(0,0,0,0);
   m_pLineName->setClickMessage("name");
+  m_pLineName->installEventFilter(m_pPopup);
   popupLayout->addWidget(m_pLineName,0,0,1,1);
   
   m_pInOut = new QComboBox(0);
   m_pInOut->setContentsMargins(0,0,0,0);
+  m_pInOut->installEventFilter(m_pPopup);
   QStringList caseList;
   caseList << "In" << "Out" << "In/Out";
   m_pInOut->addItems(caseList);
@@ -74,28 +76,37 @@ void ParamWidget::initPopup()
   
   m_pInitVal = new KLineEdit(0);
   m_pInitVal->setContentsMargins(0,0,0,0);
+  m_pInitVal->installEventFilter(m_pPopup);
   m_pInitVal->setClickMessage("value");
   m_pInitVal->setMaximumWidth(100);
   popupLayout->addWidget(m_pInitVal,0,2,1,1);
   
   m_pDoc = new KLineEdit(0);
   m_pDoc->setContentsMargins(0,0,0,0);
+  m_pDoc->installEventFilter(m_pPopup);
   m_pDoc->setClickMessage("documentation");
   popupLayout->addWidget(m_pDoc,1,0,1,3);
   
   m_pOkButton = new QPushButton(0);
   m_pOkButton->setMinimumSize(0,0);
+  m_pOkButton->installEventFilter(m_pPopup);
   m_pOkButton->setMaximumWidth(30);
   m_pOkButton->setSizePolicy(QSizePolicy(QSizePolicy::Minimum,QSizePolicy::Expanding));
   m_pOkButton->setContentsMargins(0,0,0,0);
   m_pOkButton->setIcon(KIcon("dialog-ok"));
   popupLayout->addWidget(m_pOkButton,0,3,2,1);
   setPopupLayout(popupLayout);
+  connect(m_pOkButton, SIGNAL( clicked(bool) ), this, SLOT( slotOkClicked() ) );
 }
 
 void ParamWidget::slotParamClicked()
 {
   emit paramClicked();
+}
+
+void ParamWidget::slotOkClicked()
+{
+  emit addParamater(m_pLineName->text(), m_pInitVal->text(), "test", m_pDoc->text());
 }
 
 void ParamWidget::setParam(UMLOperation* param)
@@ -110,4 +121,9 @@ void ParamWidget::setParam(UMLOperation* param)
     newText +=", ";
   }
   m_pParamPb->setText(newText);
+}
+
+bool ParamWidget::popupHasFocus()
+{
+  return m_pLineName->hasFocus() || m_pInOut->hasFocus() || m_pInitVal->hasFocus() || m_pDoc->hasFocus() || m_pOkButton->hasFocus() || m_pPopup->hasFocus();
 }

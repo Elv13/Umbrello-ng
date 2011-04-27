@@ -9,6 +9,7 @@ class QFrame;
 class QWidget;
 
 class RowWidgetPopupBase {
+  friend class PopupPrivate;
 public:
   void setMinimumPopupWidth(int width);
   int minimumPopupWidth();
@@ -22,6 +23,8 @@ protected:
   QLayout* popupLayout();
   QLayout* m_popupLayout;
   QFrame* m_pPopup;
+  virtual bool popupHasFocus() = 0;
+  virtual void initPopup() = 0;
 private:
   QRect popupGeometry(int screen) const;
   QRect m_pRect;
@@ -35,8 +38,8 @@ class PopupPrivate : public QFrame
 public:
   PopupPrivate(RowWidgetPopupBase* base, QWidget* parent, Qt::WindowFlags f = 0);
   PopupPrivate(RowWidgetPopupBase* base);
+  virtual bool eventFilter(QObject *obj, QEvent *event);
 protected:
-  bool eventFilter(QObject *o, QEvent *e);
 private:
   RowWidgetPopupBase* m_pBase;
 };

@@ -7,6 +7,8 @@
 class QPushButton;
 class QToolButton;
 class UMLOperation;
+class KLineEdit;
+class QComboBox;
 
 class ParamWidget : public QWidget, public RowWidgetPopupBase
 {
@@ -23,15 +25,20 @@ private:
   KLineEdit* m_pInitVal;
   KLineEdit* m_pDoc;
   QPushButton* m_pOkButton;
-  void initPopup();
+  
+protected:
+  virtual bool popupHasFocus();
+  virtual void initPopup();
   
 private slots:
   void slotAddParamClicked();
   void slotParamClicked();
+  void slotOkClicked();
   
 signals:
   void addParamClicked();
   void paramClicked();
+  void addParamater(QString name, QString init, QString type, QString doc);
 };
 
 #endif
