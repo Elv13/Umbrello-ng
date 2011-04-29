@@ -11,6 +11,7 @@ class QWidget;
 class RowWidgetPopupBase {
   friend class PopupPrivate;
 public:
+  virtual ~RowWidgetPopupBase() {}
   void setMinimumPopupWidth(int width);
   int minimumPopupWidth();
   void hidePopup();

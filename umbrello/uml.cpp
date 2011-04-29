@@ -730,7 +730,6 @@ void UMLApp::initView()
 
     // Prepare Tabbed Diagram Representation
     splitView();//TODO ELV complete
-    splitView();//TODO ELV complete
 
     if (!Settings::getOptionState().generalState.tabdiagrams) {
         // Stacked Diagram Representation
@@ -2941,8 +2940,6 @@ void UMLApp::splitView()
     connect(tabWidget, SIGNAL(contextMenu(QWidget*,const QPoint&)), m_doc, SLOT(slotDiagramPopupMenu(QWidget*,const QPoint&)));
     tabWidget->setCornerWidget( newSessionButton, Qt::TopLeftCorner );
     newSessionButton->installEventFilter(this);
-
-    tabWidget->addTab(new QWidget(),"test");
     
     if (Settings::getOptionState().generalState.tabdiagrams) {
         // Tabbed Diagram Representation

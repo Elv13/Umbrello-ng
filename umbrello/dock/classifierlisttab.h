@@ -33,7 +33,7 @@ class QPushButton;
 class QToolButton;
 class QVBoxLayout;
 
-class pGuiModel;
+class RowWidgetController;
 
 /**
  * A dialog page to display classifier list properties.  This is not normally setup
@@ -98,7 +98,7 @@ private:
     
     uint m_rowCount;
     
-    QList<pGuiModel*> rowList;
+    QList<RowWidgetController*> rowList;
 
 protected:
 
@@ -141,7 +141,7 @@ protected slots:
     
     void itemChanged(int row, int col);
     
-    pGuiModel* addRow();
+    RowWidgetController* addRow();
     void addEmtpyRow();
 };
 

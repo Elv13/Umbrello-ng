@@ -23,7 +23,7 @@
 #include "enumliteral.h"
 #include "entityattribute.h"
 #include "object_factory.h"
-#include "pguimodel.h"
+#include "rowwidgetcontroller.h"
 #include "compactCombo.h"
 #include "popupbutton.h"
 
@@ -322,49 +322,49 @@ void ClassifierListTab::setupDocumentationGroup(int margin) //TODO ELV dead code
 /**
  * Add a new Row
  */
-pGuiModel* ClassifierListTab::addRow()
+RowWidgetController* ClassifierListTab::addRow()
 {
     m_centralTableTW->setRowCount(m_centralTableTW->rowCount()+1);
     QString typeName;
     QString newItemType;
-    pGuiModel* aRow = new pGuiModel(m_itemType, m_pClassifier);
+    RowWidgetController* aRow = new RowWidgetController(m_itemType, m_pClassifier);
     switch (m_itemType) {
     case ot_Attribute: {
         QTableWidgetItem* nameWidget = new QTableWidgetItem("");
         nameWidget->setFlags(Qt::ItemIsEditable|Qt::ItemIsEnabled|Qt::ItemIsSelectable);
         m_centralTableTW->setItem(m_rowCount,0,nameWidget);
-        aRow->name = nameWidget;
+        aRow->setName(nameWidget);
         //connect(nameWidget,SIGNAL(destroyed(QObject*)),aRow,SLOT(destroyTableItem(QObject*)));
-        pGuiModel::linker[nameWidget] = aRow;
+        RowWidgetController::linker[nameWidget] = aRow;
         
         CompactCombo* typeCbb = new CompactCombo(this);
         m_centralTableTW->setCellWidget(m_rowCount,1,typeCbb);
-        aRow->type = typeCbb;
+        aRow->setType(typeCbb);
         
         QTableWidgetItem* inititalWidget = new QTableWidgetItem("");
         inititalWidget->setFlags(Qt::ItemIsEditable|Qt::ItemIsEnabled|Qt::ItemIsSelectable);
         m_centralTableTW->setItem(m_rowCount,2,inititalWidget);
-        aRow->initial = inititalWidget;
+        aRow->setInitial(inititalWidget);
         //connect(inititalWidget,SIGNAL(destroyed(QObject*)),aRow,SLOT(destroyTableItem(QObject*)));
-        pGuiModel::linker[inititalWidget] = aRow;
+        RowWidgetController::linker[inititalWidget] = aRow;
         
         KComboBox* visibilityCbb = new KComboBox(this);
         QStringList availableVisibilities;
         availableVisibilities << "Public" << "Private" << "Protected" << "Implementation";
         visibilityCbb->addItems(availableVisibilities);
         m_centralTableTW->setCellWidget(m_rowCount,3,visibilityCbb);
-        aRow->visibility = visibilityCbb;
+        aRow->setVisibility(visibilityCbb);
         
         QTableWidgetItem* stereotypeWidget = new QTableWidgetItem("");
         stereotypeWidget->setFlags(Qt::ItemIsEditable|Qt::ItemIsEnabled|Qt::ItemIsSelectable);
         m_centralTableTW->setItem(m_rowCount,4,stereotypeWidget);
-        aRow->stereotype = stereotypeWidget;
+        aRow->setStereotype(stereotypeWidget);
         //connect(stereotypeWidget,SIGNAL(destroyed(QObject*)),aRow,SLOT(destroyTableItem(QObject*)));
-        pGuiModel::linker[stereotypeWidget] = aRow;
+        RowWidgetController::linker[stereotypeWidget] = aRow;
         
         QCheckBox* staticCb = new QCheckBox(this);
         m_centralTableTW->setCellWidget(m_rowCount,5,staticCb);
-        aRow->staticV = staticCb;
+        aRow->setStaticV(staticCb);
         
         PopupButton* docPb = new PopupButton(this);
         docPb->setText("Doc");
@@ -378,44 +378,44 @@ pGuiModel* ClassifierListTab::addRow()
         QTableWidgetItem* nameWidget = new QTableWidgetItem("");
         nameWidget->setFlags(Qt::ItemIsEditable|Qt::ItemIsEnabled|Qt::ItemIsSelectable);
         m_centralTableTW->setItem(m_rowCount,0,nameWidget);
-        aRow->name = nameWidget;
+        aRow->setName(nameWidget);
         //connect(nameWidget,SIGNAL(destroyed(QObject*)),aRow,SLOT(destroyTableItem(QObject*)));
-        pGuiModel::linker[nameWidget] = aRow;
+        RowWidgetController::linker[nameWidget] = aRow;
         
         ParamWidget* paramWdg = new ParamWidget(this);
         m_centralTableTW->setCellWidget(m_rowCount,1,paramWdg);
-        aRow->parameters = paramWdg;
+        aRow->setParameters(paramWdg);
         
         CompactCombo* typeCbb = new CompactCombo(this);
         typeCbb->setEditable(true);
         m_centralTableTW->setCellWidget(m_rowCount,2,typeCbb);
-        aRow->type = typeCbb;
+        aRow->setType(typeCbb);
         
         KComboBox* visibilityCbb = new KComboBox(this);
         QStringList availableVisibilities;
         availableVisibilities << "Public" << "Private" << "Protected" << "Implementation"; //TODO anything better?
         visibilityCbb->addItems(availableVisibilities);
         m_centralTableTW->setCellWidget(m_rowCount,3,visibilityCbb);
-        aRow->visibility = visibilityCbb;
+        aRow->setVisibility(visibilityCbb);
         
         QTableWidgetItem* stereotypeWidget = new QTableWidgetItem("");
         stereotypeWidget->setFlags(Qt::ItemIsEditable|Qt::ItemIsEnabled|Qt::ItemIsSelectable);
         m_centralTableTW->setItem(m_rowCount,4,stereotypeWidget);
-        aRow->stereotype = stereotypeWidget;
+        aRow->setStereotype(stereotypeWidget);
         //connect(stereotypeWidget,SIGNAL(destroyed(QObject*)),aRow,SLOT(destroyTableItem(QObject*)));
-        pGuiModel::linker[stereotypeWidget] = aRow;
+        RowWidgetController::linker[stereotypeWidget] = aRow;
         
         QCheckBox* staticCb = new QCheckBox(this);
         m_centralTableTW->setCellWidget(m_rowCount,5,staticCb);
-        aRow->staticV = staticCb;
+        aRow->setStaticV(staticCb);
         
         QCheckBox* abstractCb = new QCheckBox(this);
         m_centralTableTW->setCellWidget(m_rowCount,6,abstractCb);
-        aRow->abstract = abstractCb;
+        aRow->setAbstract(abstractCb);
         
         QCheckBox* constCb = new QCheckBox(this);
         m_centralTableTW->setCellWidget(m_rowCount,7,constCb);
-        aRow->constV = constCb;
+        aRow->setConstV(constCb);
         
         PopupButton* docPb = new PopupButton(this);
         docPb->setText("Doc");
@@ -434,21 +434,21 @@ pGuiModel* ClassifierListTab::addRow()
         QTableWidgetItem* nameWidget = new QTableWidgetItem("");
         nameWidget->setFlags(Qt::ItemIsEditable|Qt::ItemIsEnabled|Qt::ItemIsSelectable);
         m_centralTableTW->setItem(m_rowCount,0,nameWidget);
-        aRow->name = nameWidget;
+        aRow->setName(nameWidget);
         //connect(nameWidget,SIGNAL(destroyed(QObject*)),aRow,SLOT(destroyTableItem(QObject*)));
-        pGuiModel::linker[nameWidget] = aRow;
+        RowWidgetController::linker[nameWidget] = aRow;
         
         CompactCombo* typeCbb = new CompactCombo(this);
         typeCbb->setEditable(true);
         m_centralTableTW->setCellWidget(m_rowCount,1,typeCbb);
-        aRow->type = typeCbb;
+        aRow->setType(typeCbb);
         
         QTableWidgetItem* stereotypeWidget = new QTableWidgetItem("");
         stereotypeWidget->setFlags(Qt::ItemIsEditable|Qt::ItemIsEnabled|Qt::ItemIsSelectable);
         m_centralTableTW->setItem(m_rowCount,2,stereotypeWidget);
-        aRow->stereotype = stereotypeWidget;
+        aRow->setStereotype(stereotypeWidget);
         //connect(stereotypeWidget,SIGNAL(destroyed(QObject*)),aRow,SLOT(destroyTableItem(QObject*)));
-        pGuiModel::linker[stereotypeWidget] = aRow;
+        RowWidgetController::linker[stereotypeWidget] = aRow;
         
       }
       break;
@@ -457,15 +457,15 @@ pGuiModel* ClassifierListTab::addRow()
         QTableWidgetItem* nameWidget = new QTableWidgetItem("");
         nameWidget->setFlags(Qt::ItemIsEditable|Qt::ItemIsEnabled|Qt::ItemIsSelectable);
         m_centralTableTW->setItem(m_rowCount,0,nameWidget);
-        aRow->name = nameWidget;
-        pGuiModel::linker[nameWidget] = aRow;
+        aRow->setName(nameWidget);
+        RowWidgetController::linker[nameWidget] = aRow;
         
         QTableWidgetItem* valWidget = new QTableWidgetItem("");
         valWidget->setFlags(Qt::ItemIsEditable|Qt::ItemIsEnabled|Qt::ItemIsSelectable);
         m_centralTableTW->setItem(m_rowCount,1,valWidget);
-        aRow->defaultValue = valWidget;
+        aRow->setDefaultValue(valWidget);
         //connect(valWidget,SIGNAL(destroyed(QObject*)),aRow,SLOT(destroyTableItem(QObject*)));
-        pGuiModel::linker[valWidget] = aRow;
+        RowWidgetController::linker[valWidget] = aRow;
         
       }
       break;
@@ -476,49 +476,49 @@ pGuiModel* ClassifierListTab::addRow()
         QTableWidgetItem* nameWidget = new QTableWidgetItem("");
         nameWidget->setFlags(Qt::ItemIsEditable|Qt::ItemIsEnabled|Qt::ItemIsSelectable);
         m_centralTableTW->setItem(m_rowCount,0,nameWidget);
-        aRow->name = nameWidget;
-        pGuiModel::linker[nameWidget] = aRow;
+        aRow->setName(nameWidget);
+        RowWidgetController::linker[nameWidget] = aRow;
         
         CompactCombo* typeCbb = new CompactCombo(this);
         m_centralTableTW->setCellWidget(m_rowCount,1,typeCbb);
-        aRow->type = typeCbb;
+        aRow->setType(typeCbb);
         
         QTableWidgetItem* valWidget = new QTableWidgetItem("");
         valWidget->setFlags(Qt::ItemIsEditable|Qt::ItemIsEnabled|Qt::ItemIsSelectable);
         m_centralTableTW->setItem(m_rowCount,2,valWidget);
-        aRow->defaultValue = valWidget;
-        pGuiModel::linker[nameWidget] = aRow;
+        aRow->setDefaultValue(valWidget);
+        RowWidgetController::linker[nameWidget] = aRow;
         
         QTableWidgetItem* stereotypeWidget = new QTableWidgetItem("");
         stereotypeWidget->setFlags(Qt::ItemIsEditable|Qt::ItemIsEnabled|Qt::ItemIsSelectable);
         m_centralTableTW->setItem(m_rowCount,3,stereotypeWidget);
-        aRow->stereotype = stereotypeWidget;
-        pGuiModel::linker[nameWidget] = aRow;
+        aRow->setStereotype(stereotypeWidget);
+        RowWidgetController::linker[nameWidget] = aRow;
         
         QTableWidgetItem* lengthWidget = new QTableWidgetItem("");
         lengthWidget->setFlags(Qt::ItemIsEditable|Qt::ItemIsEnabled|Qt::ItemIsSelectable);
         m_centralTableTW->setItem(m_rowCount,4,lengthWidget);
-        aRow->length = lengthWidget;
-        pGuiModel::linker[nameWidget] = aRow;
+        aRow->setLength(lengthWidget);
+        RowWidgetController::linker[nameWidget] = aRow;
         
         KComboBox* attributesCbb = new KComboBox(this);
         //QStringList availableVisibilities;
         //availableVisibilities << "Public" << "Private" << "Protected" << "Implementation";
         //attributesCbb->addItems(availableVisibilities);
         m_centralTableTW->setCellWidget(m_rowCount,5,attributesCbb);
-        aRow->attributes = attributesCbb;
+        aRow->setAttributes(attributesCbb);
         
         QCheckBox* autoI = new QCheckBox(this);
         m_centralTableTW->setCellWidget(m_rowCount,6,autoI);
-        aRow->autoIncrement = autoI;
+        aRow->setAutoIncrement(autoI);
         
         QCheckBox* allowNull = new QCheckBox(this);
         m_centralTableTW->setCellWidget(m_rowCount,7,allowNull);
-        aRow->allowNull = allowNull;
+        aRow->setAllowNull(allowNull);
         
         QCheckBox* indexed = new QCheckBox(this);
         m_centralTableTW->setCellWidget(m_rowCount,8,indexed);
-        aRow->indexed = indexed;
+        aRow->setIndexed(indexed);
         
         PopupButton* docPb = new PopupButton(this);
         docPb->setText("Doc");
@@ -555,7 +555,7 @@ void ClassifierListTab::reloadItemListBox()
     if (m_pClassifier) {
         UMLClassifierListItemList itemList(getItemList());
         // remove any items if present
-        foreach(pGuiModel* aRow,rowList) {
+        foreach(RowWidgetController* aRow,rowList) {
           aRow->disconnectAndDelete();
           delete aRow;
         }
@@ -569,7 +569,7 @@ void ClassifierListTab::reloadItemListBox()
         // add each item in the list to the ListBox and connect each item modified signal
         // to the ListItemModified slot in this class
         foreach (UMLClassifierListItem* listItem, itemList ) {
-            pGuiModel* aRow = addRow();
+            RowWidgetController* aRow = addRow();
             if (aRow) {
               aRow->setClassifier(listItem);
               aRow->reload();
@@ -1197,8 +1197,8 @@ void ClassifierListTab::hideArrowButtons(bool hide)
  */
 void ClassifierListTab::itemChanged(int row, int col)
 {
-  if(pGuiModel::linker[m_centralTableTW->item(row,col)])
-    pGuiModel::linker[m_centralTableTW->item(row,col)]->cellChanged(m_centralTableTW->item(row,col));
+  if(RowWidgetController::linker[m_centralTableTW->item(row,col)])
+    RowWidgetController::linker[m_centralTableTW->item(row,col)]->cellChanged(m_centralTableTW->item(row,col));
 }
 
 void ClassifierListTab::addEmtpyRow()

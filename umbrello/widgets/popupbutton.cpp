@@ -50,6 +50,7 @@ void PopupButton::slotReload() //TODO ELV dead code
 void PopupButton::slotTextChanged()
 {
   emit changed(m_pTextEdit->text());
+  setPopupText(m_pTextEdit->text());
 }
 
 void PopupButton::setPopupText(QString text)
@@ -60,7 +61,9 @@ void PopupButton::setPopupText(QString text)
     setPalette(*m_redTint);
   else
     setPalette(*m_greenTint);
-  m_pTextEdit->setText(text);
+  if (m_pTextEdit->text() != text)
+    m_pTextEdit->setText(text);
+  setToolTip(text);
 }
 
 void PopupButton::initPopup()

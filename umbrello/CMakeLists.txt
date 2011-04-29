@@ -212,7 +212,6 @@ set(libdialogs_SRCS
     dock/assoctab.cpp
     dock/classoptionstab.cpp
     dock/classifierlisttab.cpp
-    dock/pguimodel.cpp
 )
 
 kde4_add_ui_files(  libdialogs_SRCS
@@ -370,6 +369,7 @@ set (libcontroller_SRCS
     controller/notewidgetcontroller.cpp
     controller/objectwidgetcontroller.cpp
     controller/umlwidgetcontroller.cpp
+    controller/rowwidgetcontroller.cpp
 )
 
 ########### next target ###############
