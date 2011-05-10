@@ -79,6 +79,8 @@ public:
     void setUMLWidget(UMLWidget *w);
 
     void updateObject();
+    
+    void focusName();
 
 private:
   enum Visibility { //TODO ELV remove

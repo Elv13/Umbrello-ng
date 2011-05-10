@@ -54,6 +54,8 @@ public:
     void setUMLWidget(UMLWidget *w);
     
     void updatePages();
+    
+    void focusName();
 
     ~ClassPropDock();
 
@@ -77,6 +79,7 @@ protected:
     void setupContentsPage();
     void setupAssociationsPage();
     void setupInstancePages();
+    void enableTabs();
 
 private:
     KFontChooser*        m_pChooser;

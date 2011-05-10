@@ -430,4 +430,28 @@ void ClassPropDock::setupInstancePages()
     m_pAssocTab = 0;
 }
 
+void ClassPropDock::focusName()
+{
+    m_pGenPage->focusName();
+}
+
+/**
+ * Enable or disable tabs for the current type of object
+ */
+void ClassPropDock::enableTabs()
+{
+    Uml::Object_Type ot = m_pObject->baseType();
+    m_pTabWidget->setTabEnabled(m_pTabWidget->indexOf(m_pAttPage),ot == Uml::ot_Class);
+    m_pTabWidget->setTabEnabled(m_pTabWidget->indexOf(m_pOpsPage),ot == Uml::ot_Class || ot == Uml::ot_Interface);
+    m_pTabWidget->setTabEnabled(m_pTabWidget->indexOf(m_pTemplatePage),ot == Uml::ot_Class || ot == Uml::ot_Interface);
+    m_pTabWidget->setTabEnabled(m_pTabWidget->indexOf(m_pEnumLiteralPage),ot == Uml::ot_Enum);
+    //setupEntityConstraintsPage();  //TODO ELV
+    m_pTabWidget->setTabEnabled(m_pTabWidget->indexOf(m_pEntityAttributePage),ot == Uml::ot_Entity);
+    if (ot == Uml::ot_Package ) {
+        //setupContentsPage();
+    }
+}
+
+
+
 #include "classpropdock.moc"

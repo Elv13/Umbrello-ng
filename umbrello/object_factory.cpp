@@ -47,6 +47,7 @@
 #include "model_utils.h"
 #include "uniqueid.h"
 #include "cmds.h"
+#include "dock/classpropdock.h"
 
 namespace Object_Factory {
 
@@ -186,11 +187,20 @@ UMLObject* createUMLObject(Uml::Object_Type type, const QString &n,
     QString name = Model_Utils::uniqObjectName(type, parentPkg, n);
     bool bValidNameEntered = false;
     do {
-        name = KInputDialog::getText(i18nc("UMLObject name", "Name"), i18n("Enter name:"), name, &ok, (QWidget*)UMLApp::app());
-        if (!ok) {
-            return 0;
+        if (UMLApp::app()->editDock()->isVisible()) {
+            UMLObject *o = createNewUMLObject(type, name, parentPkg);
+            UMLApp::app()->editDock()->setObject(o);
+            UMLApp::app()->editDock()->updatePages();
+            UMLApp::app()->editDock()->focusName();
+            return o;
         }
-        if (name.length() == 0) {
+        else {
+            name = KInputDialog::getText(i18nc("UMLObject name", "Name"), i18n("Enter name:"), name, &ok, (QWidget*)UMLApp::app());
+            if (!ok) {
+                return 0;
+            }
+        }
+        if (name.length() == 0) { //TODO ELV copy this to gentab
             KMessageBox::error(0, i18n("That is an invalid name."),
                                i18n("Invalid Name"));
             continue;

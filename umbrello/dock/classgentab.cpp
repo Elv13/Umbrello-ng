@@ -794,4 +794,9 @@ void ClassGenTab::slotActorToggled( bool state )
     }
 }
 
+void ClassGenTab::focusName()
+{
+    m_pClassNameLE->setFocus();
+}
+
 #include "classgentab.moc"
