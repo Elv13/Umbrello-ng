@@ -10,6 +10,7 @@
 #include "umltemplatelist.h"
 #include "uml.h"
 #include "umldoc.h"
+#include "typecombo.h"
 
 //Qt
 #include <QtGui/QLineEdit>
@@ -270,6 +271,13 @@ void RowWidgetController::cellChanged(QTableWidgetItem* item)
 void RowWidgetController::setClassifier(UMLClassifierListItem* _classifier)
 {
   classifier = _classifier;
+  
+    if (m_pType) { //TODO ELV is it ok to place it here?
+        disconnect(m_pType, SIGNAL( editTextChanged(QString) ), this, SLOT( typeChanged(QString) ) );
+        m_pType->fill(classifier->getTypeName(),classifier);//type->setText(classifier->getTypeName());
+        connect(m_pType, SIGNAL( editTextChanged(QString) ), this, SLOT( typeChanged(QString) ) );
+    }
+  
   connect(classifier, SIGNAL(modified()),this,SLOT(reload()));
   
   reload();
@@ -293,8 +301,9 @@ void RowWidgetController::reload()
         }
       }
       
-    if (m_pType)
-      insertTypesSorted(classifier->getTypeName());//type->setText(classifier->getTypeName());
+      if (m_pType) {
+        m_pType->setText(classifier->getTypeName());
+      }
     
     if (m_pVisibility) {
       if (classifier->visibility() == Uml::Visibility::Implementation) //TODO ELV find why only Uml::Visibility::FromParent -need- to be "3"
@@ -324,22 +333,6 @@ void RowWidgetController::reload()
     //QTableWidgetItem* m_pDefaultValue;//TODO
 
     connect( classifier, SIGNAL(modified()),this,SLOT(slotListItemModified()) ); //TODO ELV
-    
-    if (classifier->doc().isEmpty()) {
-      //m_pDocumentation->setPalette(*m_greenTint);
-    }
-    else {
-      //m_pDocumentation->setPalette(*m_redTint);
-    }
-    
-    if (m_pSource)
-      if (qobject_cast<UMLOperation*>(classifier))
-        if (!qobject_cast<UMLOperation*>(classifier)->getSourceCode().isEmpty()) {
-          //m_pSource->setPalette(*m_greenTint);
-        }
-        else {
-          //m_pSource->setPalette(*m_redTint);
-        }
   }
     
 }
@@ -361,94 +354,6 @@ void RowWidgetController::disconnectAndDelete()
   linker[m_pInitial]=NULL;
   linker[m_pDefaultValue]=NULL;
   disconnect(); //Everything else
-}
-
-/**
- * Should never happen (none of the case), but if it does. at least dont segfault
- */
-/*void RowWidgetController::destroyTableItem(QObject *obj)
-{
-  if (obj == name) {
-    name = 0;
-    qDebug() << "name have been destroyed externally";
-  }
-  else if (obj == initial) {
-    initial = 0;
-    qDebug() << "initial have been destroyed externally";
-  }
-  else if (obj == defaultValue) {
-    defaultValue = 0;
-    qDebug() << "defaultValue have been destroyed externally";
-  }
-  else if (obj == stereotype) {
-    stereotype = 0;
-    qDebug() << "stereotype have been destroyed externally";
-  }
-  else {
-    qDebug() << "an unknow tableitem have been destroyed externally";
-  }
-}*/
-
-
-/**
- * Inserts @p type into the type-combobox as well as its completion object.
- * The combobox is cleared and all types together with the optional new one
- * sorted and then added again.
- * @param type   a new type to add and selected
- */
-void RowWidgetController::insertTypesSorted(const QString& currentType)
-{
-  if (m_pType) {
-    disconnect(m_pType, SIGNAL( editTextChanged(QString) ), this, SLOT( typeChanged(QString) ) );
-    m_pType->clear();
-    QStringList types;
-    // add template parameters
-    UMLClassifier *pConcept = 0;
-    
-    if (qobject_cast<UMLAttribute*>(classifier))
-      pConcept = qobject_cast<UMLClassifier*>(classifier->parent());
-    else if (qobject_cast<UMLOperation*>(classifier))
-      pConcept = qobject_cast<UMLClassifier*>(classifier->parent());
-
-    if (!qobject_cast<UMLClassifier*>(pConcept)) {
-      m_pType->setText(currentType);
-      connect(m_pType, SIGNAL( editTextChanged(QString) ), this, SLOT( typeChanged(QString) ) );
-      return;
-    }
-    
-    
-    UMLTemplateList tmplParams( pConcept->getTemplateList() );
-    foreach( UMLTemplate* t, tmplParams ) {
-        types << t->name();
-    }
-        
-    // now add the Conceptsm_pUmldoc
-    UMLClassifierList namesList( UMLApp::app()->document()->concepts() );
-    foreach(UMLClassifier* obj, namesList ) {
-        types << obj->fullyQualifiedName();
-    }
-    // add the given parameter
-    if ( !types.contains(currentType) ) {
-        types << currentType;
-    }
-    types.sort();
-
-    
-    //m_pType->clear();
-    
-    m_pType->addItems(types);
-    
-
-    // select the given parameter
-    int currentIndex = m_pType->findText(currentType);
-    if (currentIndex > -1) {
-        m_pType->setCurrentIndex(currentIndex);
-    }
-    else {
-      m_pType->setText(currentType);
-    }
-    connect(m_pType, SIGNAL( editTextChanged(QString) ), this, SLOT( typeChanged(QString) ) );
-  }
 }
 
 PopupButton* RowWidgetController::getDocumentation()
@@ -486,6 +391,8 @@ void RowWidgetController::slotAddParamater(QString name,QString init,QString typ
 
 void RowWidgetController::init()
 {
+    if (!m_pParent || !qobject_cast<UMLClassifier*>(m_pParent))
+        return; //TODO ELV how to handle this?
   switch (m_pRowType) {
     case Uml::ot_Operation: {
       UMLOperation* oper = new UMLOperation(0/*m_pParent*/);
@@ -502,7 +409,7 @@ void RowWidgetController::init()
       
       
       ((UMLClassifier*)m_pParent)->addOperation(oper);
-      //setClassifier(oper);
+      setClassifier(oper);
     }
     break;
     case Uml::ot_Attribute: {
@@ -562,7 +469,7 @@ ParamWidget* RowWidgetController::getParameters()
   return m_pParameters;
 }
 
-CompactCombo* RowWidgetController::getType()
+TypeCombo* RowWidgetController::getType()
 {
   return m_pType;
 }
@@ -637,7 +544,7 @@ void RowWidgetController::setParameters(ParamWidget* params)
   m_pParameters = params;
 }
 
-void RowWidgetController::setType(CompactCombo* type)
+void RowWidgetController::setType(TypeCombo* type)
 {
   m_pType = type;
 }

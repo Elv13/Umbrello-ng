@@ -29,7 +29,6 @@
 #include "listpopupmenu.h"
 #include "docwindow.h"
 #include "dock/classpropdock.h"
-#include "dock/dockManager.h"
 
 
 /**
@@ -228,7 +227,7 @@ void ObjectWidget::showProperties()
     DocWindow *docwindow = UMLApp::app()->docWindow();
     docwindow->updateDocumentation(false);
     //QPointer<ClassPropDock> dlg = new ClassPropDock((QWidget*)UMLApp::app(), this);
-    DockManager::getClassPropDock()->setObjectWidget(this);
+    UMLApp::app()->editDock()->setObjectWidget(this);
     //dlg->show();
     docwindow->showDocumentation(this, true);
     UMLApp::app()->document()->setModified(true);

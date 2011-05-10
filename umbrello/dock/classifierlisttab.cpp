@@ -25,6 +25,7 @@
 #include "object_factory.h"
 #include "rowwidgetcontroller.h"
 #include "compactCombo.h"
+#include "typecombo.h"
 #include "popupbutton.h"
 
 #include <kdebug.h>
@@ -322,12 +323,12 @@ void ClassifierListTab::setupDocumentationGroup(int margin) //TODO ELV dead code
 /**
  * Add a new Row
  */
-RowWidgetController* ClassifierListTab::addRow()
+RowWidgetController* ClassifierListTab::addRow(bool ignoreModified)
 {
     m_centralTableTW->setRowCount(m_centralTableTW->rowCount()+1);
     QString typeName;
     QString newItemType;
-    RowWidgetController* aRow = new RowWidgetController(m_itemType, m_pClassifier);
+    RowWidgetController* aRow = new RowWidgetController(m_itemType, m_pClassifier, ignoreModified);
     switch (m_itemType) {
     case ot_Attribute: {
         QTableWidgetItem* nameWidget = new QTableWidgetItem("");
@@ -337,7 +338,7 @@ RowWidgetController* ClassifierListTab::addRow()
         //connect(nameWidget,SIGNAL(destroyed(QObject*)),aRow,SLOT(destroyTableItem(QObject*)));
         RowWidgetController::linker[nameWidget] = aRow;
         
-        CompactCombo* typeCbb = new CompactCombo(this);
+        TypeCombo* typeCbb = new TypeCombo(this);
         m_centralTableTW->setCellWidget(m_rowCount,1,typeCbb);
         aRow->setType(typeCbb);
         
@@ -386,7 +387,7 @@ RowWidgetController* ClassifierListTab::addRow()
         m_centralTableTW->setCellWidget(m_rowCount,1,paramWdg);
         aRow->setParameters(paramWdg);
         
-        CompactCombo* typeCbb = new CompactCombo(this);
+        TypeCombo* typeCbb = new TypeCombo(this);
         typeCbb->setEditable(true);
         m_centralTableTW->setCellWidget(m_rowCount,2,typeCbb);
         aRow->setType(typeCbb);
@@ -438,7 +439,7 @@ RowWidgetController* ClassifierListTab::addRow()
         //connect(nameWidget,SIGNAL(destroyed(QObject*)),aRow,SLOT(destroyTableItem(QObject*)));
         RowWidgetController::linker[nameWidget] = aRow;
         
-        CompactCombo* typeCbb = new CompactCombo(this);
+        TypeCombo* typeCbb = new TypeCombo(this);
         typeCbb->setEditable(true);
         m_centralTableTW->setCellWidget(m_rowCount,1,typeCbb);
         aRow->setType(typeCbb);
@@ -479,7 +480,7 @@ RowWidgetController* ClassifierListTab::addRow()
         aRow->setName(nameWidget);
         RowWidgetController::linker[nameWidget] = aRow;
         
-        CompactCombo* typeCbb = new CompactCombo(this);
+        TypeCombo* typeCbb = new TypeCombo(this);
         m_centralTableTW->setCellWidget(m_rowCount,1,typeCbb);
         aRow->setType(typeCbb);
         
@@ -569,7 +570,7 @@ void ClassifierListTab::reloadItemListBox()
         // add each item in the list to the ListBox and connect each item modified signal
         // to the ListItemModified slot in this class
         foreach (UMLClassifierListItem* listItem, itemList ) {
-            RowWidgetController* aRow = addRow();
+            RowWidgetController* aRow = addRow(true);
             if (aRow) {
               aRow->setClassifier(listItem);
               aRow->reload();

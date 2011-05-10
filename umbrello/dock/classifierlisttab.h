@@ -141,7 +141,7 @@ protected slots:
     
     void itemChanged(int row, int col);
     
-    RowWidgetController* addRow();
+    RowWidgetController* addRow(bool ignoreModified = false);
     void addEmtpyRow();
 };
 

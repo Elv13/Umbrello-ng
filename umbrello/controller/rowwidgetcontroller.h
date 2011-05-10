@@ -17,13 +17,14 @@
 #include "enumliteral.h"
 
 class QPalette;
+class TypeCombo;
 
 class RowWidgetController : public QObject {
  Q_OBJECT
   public:
-    RowWidgetController(Uml::Object_Type itemType, UMLObject *parent = 0) :  m_pName(0), m_pParameters(0), m_pType(0), m_pVisibility(0), m_pStereotype(0), m_pStaticV(0), 
+    RowWidgetController(Uml::Object_Type itemType, UMLObject *parent = 0, bool ignoreModified = false) :  m_pName(0), m_pParameters(0), m_pType(0), m_pVisibility(0), m_pStereotype(0), m_pStaticV(0), 
     m_pAbstract(0), m_pConstV(0), m_pDocumentation(0), m_pSource(0), m_pInitial(0), m_pDefaultValue(0), classifier(0),
-    m_pIsModified(false),m_pAttributes(0),m_pAutoIncrement(0),m_pAllowNull(0),m_pIndexed(0),m_pLength(0),m_pParent(parent),m_pRowType(itemType) {}
+    m_pIsModified(ignoreModified),m_pAttributes(0),m_pAutoIncrement(0),m_pAllowNull(0),m_pIndexed(0),m_pLength(0),m_pParent(parent),m_pRowType(itemType) {}
     UMLObject* m_pParent;
     Uml::Object_Type m_pRowType;
     static QHash< QTableWidgetItem*, RowWidgetController* > linker; //That suck, but QTableWidgetItems dont have their own signals...
@@ -45,7 +46,7 @@ class RowWidgetController : public QObject {
     QTableWidgetItem* getDefaultValue();
     QTableWidgetItem* getLength();
     ParamWidget* getParameters();
-    CompactCombo* getType();
+    TypeCombo* getType();
     KComboBox* getVisibility();
     KComboBox* getAttributes();
     QCheckBox* getStaticV();
@@ -60,7 +61,7 @@ class RowWidgetController : public QObject {
     void setDefaultValue(QTableWidgetItem* defaultValue);
     void setLength(QTableWidgetItem* length);
     void setParameters(ParamWidget* params);
-    void setType(CompactCombo* type);
+    void setType(TypeCombo* type);
     void setVisibility(KComboBox* visibility);
     void setAttributes(KComboBox* attributes);
     void setStaticV(QCheckBox* staticV);
@@ -83,7 +84,7 @@ class RowWidgetController : public QObject {
     QTableWidgetItem*      m_pDefaultValue;
     QTableWidgetItem*      m_pLength;
     ParamWidget*           m_pParameters;
-    CompactCombo*          m_pType;
+    TypeCombo*             m_pType;
     KComboBox*             m_pVisibility;
     KComboBox*             m_pAttributes;
     QCheckBox*             m_pStaticV;

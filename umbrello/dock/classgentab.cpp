@@ -281,7 +281,6 @@ void ClassGenTab::setObject(UMLObject * o)
     QStringList visibility;
     visibility << i18n("P&ublic") << i18n("P&rivate") << i18n("Pro&tected") << i18n("Imple&mentation");
     m_pVisibility->addItems(visibility);
-    QHBoxLayout * scopeLayout = new QHBoxLayout(this);
     formLayout->addRow(m_pVisibilityL,m_pVisibility);
     
     //if (m_pInstanceWidget) {
@@ -455,7 +454,7 @@ void ClassGenTab::setObjectWidget(ObjectWidget *o) //TODO ELV port/dead code
 void ClassGenTab::setUMLWidget(UMLWidget *w)
 {
   
-  if (m_pInstanceWidget && m_pBorderL) {
+  if (m_pInstanceWidget && m_pBorderL && m_pBorderColor && m_pBackgroundColor && m_pFontCombo) {
     disconnect(m_pBorderColor,SIGNAL(changed(QColor)),m_pInstanceWidget,SLOT(setLineColor(QColor)));
     disconnect(m_pBackgroundColor,SIGNAL(changed(QColor)),m_pInstanceWidget,SLOT(setFillColour(QColor)));
     disconnect(m_pFontCombo,SIGNAL(currentFontChanged(QFont)),m_pInstanceWidget,SLOT(setFont(QFont)));

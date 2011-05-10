@@ -40,7 +40,6 @@
 #include "../dock/classpropdock.h"
 #include "idchangelog.h"
 #include "cmds.h"
-#include "dock/dockManager.h"
 
 using namespace Uml;
 
@@ -445,8 +444,8 @@ void UMLWidget::slotLineWidthChanged(Uml::IDType viewID)
 void UMLWidget::mouseDoubleClickEvent(QMouseEvent * me)
 {
     m_widgetController->mouseDoubleClickEvent(me);
-    DockManager::getClassPropDock()->setUMLWidget(this);
-    DockManager::getClassPropDock()->updatePages();
+    UMLApp::app()->editDock()->setUMLWidget(this);
+    UMLApp::app()->editDock()->updatePages();
 }
 
 void UMLWidget::setUseFillColour(bool fc)

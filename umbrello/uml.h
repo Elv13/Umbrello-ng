@@ -34,6 +34,7 @@ class RefactoringAssistant;
 class KPlayerPopupSliderAction;
 class XhtmlGenerator;
 class StatusBarToolButton;
+class ClassPropDock;
 
 // KDE forward declarations
 class KActionMenu;
@@ -163,6 +164,8 @@ public:
     QString activeLanguageScopeSeparator();
 
     KConfig* config();
+    
+    ClassPropDock* editDock();
 
 protected:
     virtual void keyPressEvent(QKeyEvent* e);
@@ -341,6 +344,8 @@ private:
     QDockWidget* m_documentationDock;  ///< Contains the documentation DocWindow widget.
     QDockWidget* m_cmdHistoryDock;     ///< Contains the undo/redo viewer widget.
     QDockWidget* m_propertyDock;       ///< Contains the property browser widget.
+    
+    ClassPropDock* m_editDock;
 
     DocWindow*   m_pDocWindow;         ///< Documentation window.
     QUndoView*   m_pQUndoView;         ///< Undo / Redo Viewer

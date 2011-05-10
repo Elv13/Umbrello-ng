@@ -47,7 +47,6 @@
 #include "classimport.h"
 #include "refactoringassistant.h"
 // dock
-#include "dock/dockManager.h"
 #include "dock/classpropdock.h"
 // clipboard
 #include "umlclipboard.h"
@@ -183,7 +182,9 @@ UMLApp::UMLApp(QWidget* parent) : KXmlGuiWindow(parent)
     setAutoSaveSettings();
     m_toolsbar->setToolButtonStyle(Qt::ToolButtonIconOnly);  // too many items for text, really we want a toolbox widget
     
-    addDockWidget(Qt::BottomDockWidgetArea,DockManager::getClassPropDock());
+    
+    m_editDock = new ClassPropDock();
+    addDockWidget(Qt::BottomDockWidgetArea,m_editDock);
 }
 
 /**
@@ -2955,6 +2956,11 @@ void UMLApp::splitView()
 KConfig* UMLApp::config()
 {
     return m_config.data();
+}
+
+ClassPropDock* UMLApp::editDock()
+{
+  return m_editDock;
 }
 
 #include "uml.moc"

@@ -207,7 +207,6 @@ set(libdialogs_SRCS
     dialogs/umlviewdialog.cpp
     dialogs/umlwidgetcolorpage.cpp
     dock/classpropdock.cpp
-    dock/dockManager.cpp
     dock/classgentab.cpp
     dock/assoctab.cpp
     dock/classoptionstab.cpp
@@ -361,6 +360,7 @@ set (libwidgets_SRCS
     widgets/rowwidgetpopupbase.cpp
     widgets/paramwidget.cpp
     widgets/popupbutton.cpp
+    widgets/typecombo.cpp
 )
 
 set (libcontroller_SRCS
