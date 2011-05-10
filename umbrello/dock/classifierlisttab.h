@@ -105,6 +105,8 @@ protected:
     void reloadItemListBox();
 
     void hideArrowButtons(bool hide);
+    
+    bool eventFilter(QObject *o, QEvent *e);
 
     Uml::Object_Type m_itemType;
     UMLClassifier* m_pClassifier;
@@ -143,6 +145,8 @@ protected slots:
     
     RowWidgetController* addRow(bool ignoreModified = false);
     void addEmtpyRow();
+    
+    void slotSelectLastRow();
 };
 
 #endif

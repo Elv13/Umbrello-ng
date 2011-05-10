@@ -50,6 +50,8 @@
 #include <QtGui/QTableWidget>
 #include <QtGui/QTableWidgetItem>
 
+#include <QTimer>
+
 using namespace Uml;
 
 
@@ -105,6 +107,7 @@ void ClassifierListTab::setupPage()
     m_centralTableTW = new QTableWidget(this);
     mainLayout->addWidget(m_centralTableTW);
     m_centralTableTW->verticalHeader()->setVisible(false);
+    m_centralTableTW->installEventFilter(this);
     m_centralTableTW->setSelectionBehavior(QAbstractItemView::SelectRows);
     connect(m_centralTableTW, SIGNAL(cellChanged(int,int)), this, SLOT(itemChanged(int, int)));
     m_centralTableTW->setRowCount(0);
@@ -1206,6 +1209,35 @@ void ClassifierListTab::addEmtpyRow()
 {
   connect(addRow(),SIGNAL(addNew()),this,SLOT(addEmtpyRow()));
 }
+
+/**
+ * Select the last row (new item) when enter is pressed
+ */
+bool ClassifierListTab::eventFilter(QObject *o, QEvent *e)
+{
+    if (e->type() == QEvent::KeyPress) {
+        const QKeyEvent *ke = static_cast<QKeyEvent *>(e);
+        if(ke->key()== Qt::Key_Enter) {
+            if (dynamic_cast<QTableWidgetItem*>(m_centralTableTW->currentItem())) {
+                //Give the time for eveything to settle
+                QTimer *timer = new QTimer(this);
+                timer->setSingleShot(true);
+                connect(timer, SIGNAL(timeout()), this, SLOT(slotSelectLastRow()));
+                timer->start(25);
+            }
+        }
+    }
+    return true;
+}
+
+void ClassifierListTab::slotSelectLastRow()
+{
+    m_centralTableTW->setCurrentCell(m_centralTableTW->rowCount()-1,0);
+    if (dynamic_cast<QTableWidgetItem*>(m_centralTableTW->item(m_centralTableTW->rowCount()-1,0))) {
+        m_centralTableTW->editItem(m_centralTableTW->item(m_centralTableTW->rowCount()-1,0));
+    }
+}
+
 
 #include "classifierlisttab.moc"
 

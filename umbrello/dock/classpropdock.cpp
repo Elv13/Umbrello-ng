@@ -308,12 +308,28 @@ void ClassPropDock::updatePages()
     m_pGenPage->setObject(m_pObject);
     
     if (qobject_cast<UMLClassifier*>(m_pObject)) {
-      m_pAttPage->setClassifier((UMLClassifier*)m_pObject);
-      m_pOpsPage->setClassifier((UMLClassifier*)m_pObject);
-      m_pTemplatePage->setClassifier((UMLClassifier*)m_pObject);
-      m_pEnumLiteralPage->setClassifier((UMLClassifier*)m_pObject);
-      m_pEntityAttributePage->setClassifier((UMLClassifier*)m_pObject);
-      m_pAssocTab->setObject(m_pObject, UMLApp::app()->currentView());
+        
+        Uml::Object_Type ot = m_pObject->baseType();
+        
+        if (ot == Uml::ot_Class ) {
+            m_pAttPage->setClassifier((UMLClassifier*)m_pObject);
+        }
+        
+        if (ot == Uml::ot_Class || ot == Uml::ot_Interface) {
+            m_pOpsPage->setClassifier((UMLClassifier*)m_pObject);
+        }
+        
+        if (ot == Uml::ot_Class || ot == Uml::ot_Interface) {
+            m_pTemplatePage->setClassifier((UMLClassifier*)m_pObject);
+        }
+        
+        if (ot == Uml::ot_Enum) {
+            m_pEnumLiteralPage->setClassifier((UMLClassifier*)m_pObject);
+        }
+        
+        if (ot == Uml::ot_Entity) {
+            m_pEntityAttributePage->setClassifier((UMLClassifier*)m_pObject);
+        }
     }
     
     if (m_pWidget) {

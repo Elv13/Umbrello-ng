@@ -107,6 +107,7 @@ void ParamWidget::slotParamClicked()
 void ParamWidget::slotOkClicked()
 {
   emit addParamater(m_pLineName->text(), m_pInitVal->text(), "test", m_pDoc->text());
+  hidePopup();
 }
 
 void ParamWidget::setParam(UMLOperation* param)
