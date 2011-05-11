@@ -2,10 +2,6 @@
 
 #include "uml.h"
 
-#ifdef Q_WS_X11
-#include <private/qt_x11_p.h>
-#endif
-
 #include <QtGui/QLayout>
 #include <QtGui/QDesktopWidget>
 #include <QtGui/QFrame>
@@ -29,7 +25,6 @@ PopupPrivate::PopupPrivate(RowWidgetPopupBase* base) {
 bool PopupPrivate::eventFilter(QObject *obj, QEvent *event)
 {
   if ((event->type() != 12) && (event->type() != 77) && (event->type() != 5) && (event->type() != 129))
-  qDebug() << "type: " << event->type();
   if (event->type() == QEvent::FocusOut) {
     if (!m_pBase->popupHasFocus()) {
       m_pBase->hidePopup();
