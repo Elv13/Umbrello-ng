@@ -2,7 +2,7 @@
 #include <QItemSelectionModel>
 #include <QAbstractItemView>
 
-#include <private/qcombobox_p.h>
+#include <QtGui/QLineEdit>
  
 void CompactCombo::showPopup()
 {
