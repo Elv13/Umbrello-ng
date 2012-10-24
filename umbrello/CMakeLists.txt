@@ -1,5 +1,32 @@
+project(umbrello)
+
+cmake_minimum_required(VERSION 2.8)
+
+
+find_package(KDE4 REQUIRED)
+find_package(Qt4 REQUIRED)
+find_package(Automoc4 REQUIRED)
+
+include(KDE4Defaults)
+include(MacroLibrary)
+include(CheckIncludeFile)
+include(CheckIncludeFileCXX)
+include(CheckLibraryExists)
+
+set(CMAKE_REQUIRED_DEFINITIONS ${_KDE4_PLATFORM_DEFINITIONS} -DQT_STRICT_ITERATORS)
+
+include_directories(
+    ${CMAKE_SOURCE_DIR}
+    ${CMAKE_BINARY_DIR}
+    ${KDE4_INCLUDES}
+)
+
+find_package(LibXslt REQUIRED)
+find_package(LibXml2 REQUIRED)
+
 add_subdirectory( pics )
 add_subdirectory( headings )
+
 
 add_definitions(-DQT3_SUPPORT_WARNINGS)
 
@@ -19,6 +46,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}  ${KDE4_ENABLE_EXCEPTIONS}")
 include_directories(
   ${LIBXML2_INCLUDE_DIR}
   ${LIBXSLT_INCLUDE_DIR}
+  ${CMAKE_CURRENT_SOURCE_DIR}/
   ${CMAKE_CURRENT_SOURCE_DIR}/debug/
   ${CMAKE_CURRENT_SOURCE_DIR}/dialogs/
   ${CMAKE_CURRENT_SOURCE_DIR}/clipboard/
@@ -462,6 +490,11 @@ set (umbrello_SRCS
     ${libwidgets_SRCS}
     ${libumbrello_SRCS}
 )
+
+SET( QT_USE_QT3SUPPORT TRUE )  
+SET( QT_USE_QTXML TRUE )  
+
+INCLUDE( ${QT_USE_FILE} )
 
 kde4_add_app_icon(umbrello_SRCS "${CMAKE_CURRENT_SOURCE_DIR}/pics/hi*-app-umbrello.png")
 kde4_add_executable(umbrello ${umbrello_SRCS})
